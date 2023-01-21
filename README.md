@@ -4,7 +4,7 @@
 
 Project started during [![Open Source Saturday](https://img.shields.io/badge/%E2%9D%A4%EF%B8%8F-open%20source%20saturday-F64060.svg)](https://www.meetup.com/it-IT/Open-Source-Saturday-Milano/)
 
-The idea is to implement the [Affinity Propagation] clustering algorithm in Nim and make it available in Python through [nimporter](https://github.com/Pebaz/nimporter). The advantage of Affinity Propagation over K-means is that the number of cluster is automatically detected (although there is a knob that can be used to increase it or decrease it). The disadvantage is that it is memory and computation intensive.
+The idea is to implement the [Affinity Propagation] clustering algorithm in Nim and make it available in Python through [nimporter](https://github.com/Pebaz/nimporter). I want to see how much friction there is to support this use case for nim (basically Nim as a Cython alternative). The advantage of Affinity Propagation over K-means is that the number of cluster is automatically detected (although there is a knob that can be used to increase it or decrease it). The disadvantage is that it is memory and computation intensive.
 
 Ideally I would like to experiment some of the "scalable" variants, one possible target and a good reference is ["Scalable Affinity Propagation for massive datasets", Shiokawa 2021](https://scholar.google.it/scholar?hl=it&as_sdt=2005&sciodt=0%2C5&cites=17534306066151546043&scipsc=&q=Scalable+affinity+propagation+for+massive+datasets&btnG=).
 This seems to solve the issue of computational complexity (goes from O(N^2T) to O(NT)) but it still

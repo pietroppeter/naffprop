@@ -34,7 +34,7 @@
 ## errors ggplotnim
 
 ```
-❯ nim r data --nbShow
+❯ nim r data2 --nbShow
 Hint: used config file '/Users/pietroppeter/nim/config/nim.cfg' [Conf]
 Hint: used config file '/Users/pietroppeter/nim/config/config.nims' [Conf]
 ............................................................................................................................................................................................
@@ -48,7 +48,7 @@ candidates (edit distance, scope distance); see '--spellSuggest':
 ```
 
 ```
-❯ nim r data --nbShow  
+❯ nim r data2 --nbShow  
 Hint: used config file '/Users/pietroppeter/nim/config/nim.cfg' [Conf]
 Hint: used config file '/Users/pietroppeter/nim/config/config.nims' [Conf]
 ............................................................................................................................................................................................
