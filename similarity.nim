@@ -1,8 +1,7 @@
 #[
-  - SymMatrix is a triangular symmetric matrix with constant diagonal element
-  - minimum size is 2x2 (single off diagonal element)
+  - SymMatrix is a triangular symmetric matrix with constant diagonal element (called preference)
   - a 3x3 SimMatrix should have 3 elements in data
-  - a 4x4 SimMatrix should have 6 elements
+  - a 4x4 SimMatrix should have 6 elements in data
   - a nxn SimMatrix should have n(n - 1)/2 elements
   - data.len should be kept equal to size*(size - 1)/2
   - elements are stored by row
@@ -31,15 +30,21 @@ type
     pref*: float
     data*: seq[float]
 
-func index*(s: SimMatrix, i, j: int): int =
+template checkBounds =
+  assert i > 0 and i < s.n
+  assert j > 0 and j < s.n
+
+
+func index*(s: SimMatrix; i, j: int): int =
+  checkBounds
+  assert i != j
   if i < j:
     s.n*i - (i + 1)*(i+2) div 2 + j
   else:
     s.index(j, i)
 
 func `[]`*(s: SimMatrix; i, j: int): float =
-  assert i < s.n
-  assert j < s.n
+  checkBounds
   if i == j:
     s.pref
   elif i < j:
@@ -55,8 +60,6 @@ iterator pairs*(s: SimMatrix): (int, int) =
 func `$`*(s: SimMatrix): string =
   for i in 0 ..< s.n:
     for j in 0 ..< s.n:
-      debugEcho (i, j)
-      debugEcho s[i, j]
       result.add fmt"{s[i, j]:>6.2f}"
     result.add '\n'
 

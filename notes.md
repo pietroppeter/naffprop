@@ -23,6 +23,10 @@
 - where did I saw the trick of using a reduced version of similarity matrix? (only the triangular part)
 - [x] implemented basic api for similarity matrix! :party_face:
 
+## similarity
+
+- module with basic api to work with a similarity matrix (in a compact way)
+
 ## errors ggplotnim
 
 ```
