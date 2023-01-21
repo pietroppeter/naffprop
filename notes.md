@@ -33,6 +33,7 @@
 
 ## errors ggplotnim
 
+understood why the error: I had an old pixie installed and failed uring compilation.
 ```
 ❯ nim r data2 --nbShow
 Hint: used config file '/Users/pietroppeter/nim/config/nim.cfg' [Conf]
@@ -47,6 +48,7 @@ candidates (edit distance, scope distance); see '--spellSuggest':
  (3, 4): 'SomePaint' [type declared in /Users/pietroppeter/pixie/src/pixie/paints.nim(34, 3)]
 ```
 
+updating ginger and no lock files. now it will not by default import pixie so compile error happens later.nimb
 ```
 ❯ nim r data2 --nbShow  
 Hint: used config file '/Users/pietroppeter/nim/config/nim.cfg' [Conf]
@@ -58,3 +60,22 @@ Hint: used config file '/Users/pietroppeter/nim/config/config.nims' [Conf]
 /Users/pietroppeter/nimib/src/nimib.nim(74, 18) template/generic instantiation of `captureStdout` from here
 /Users/pietroppeter/.nimble/pkgs/ginger-0.4.1/ginger/backendTikZ.nim(11, 8) Error: cannot open file: latexdsl_nochecks
 ```
+
+### latexdsl issue
+
+latexdsl not valid repo structure:
+
+```
+Error: cannot open file: latexdsl_nochecks
+
+    ~/affprop    main !1 ?1 ──── base   22:45:52  
+❯ nimble path latexdsl    
+/Users/pietroppeter/.nimble/pkgs/latexdsl-0.1.5
+
+    ~/affprop    main !1 ?1 ──── base   22:46:03  
+❯ ls /Users/pietroppeter/.nimble/pkgs/latexdsl-0.1.5
+latexdsl        latexdsl.nimble
+latexdsl.nim    nimblemeta.json
+```
+
+in github there is also a `latexdsl_nochecks.nim` in `src` folder next to `latexdsl.nim`
