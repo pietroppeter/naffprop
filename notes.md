@@ -25,11 +25,11 @@
 - starting with a 2d point (generic later, then move points to its own module)
 - [x] 8 test points
 - [x] toSimMatrix
+- [x] minimal matrix module
 
 ## similarity
 
 - module with basic api to work with a similarity matrix (in a compact way)
-
 
 ## errors ggplotnim
 
