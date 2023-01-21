@@ -22,10 +22,14 @@
 - cran apcluster: https://cran.r-project.org/web/packages/apcluster/index.html
 - where did I saw the trick of using a reduced version of similarity matrix? (only the triangular part)
 - [x] implemented basic api for similarity matrix! :party_face:
+- starting with a 2d point (generic later, then move points to its own module)
+- [x] 8 test points
+- [x] toSimMatrix
 
 ## similarity
 
 - module with basic api to work with a similarity matrix (in a compact way)
+
 
 ## errors ggplotnim
 

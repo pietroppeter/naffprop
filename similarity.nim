@@ -22,7 +22,7 @@
   - initial row index for nxn matrix are: 0 (1 .. n -1), n, n + (n - 1), n + (n - 1) + (n - 2), ... (n-1)*n/2 - 1
     - for row index i I have i-th row index is n*i-T(i)? (where T(i) is i+1-th triangular number 1, 3, 6, 10, ... = (i+1)(i+2)/2)
 ]#
-import std / strformat
+import std / [strformat, math]
 
 type
   SimMatrix* = object
@@ -30,21 +30,34 @@ type
     pref*: float
     data*: seq[float]
 
-template checkBounds =
-  assert i > 0 and i < s.n
-  assert j > 0 and j < s.n
+type
+  Point* = tuple
+    x, y: float
 
+func sim*(p, q: Point): float =
+  - ((p.x - q.x)^2 + (p.y - q.y)^2) 
+
+func expDataLen*(s: SimMatrix): int =
+  (s.n*(s.n - 1)) div 2
+
+template checkBounds =
+  assert i >= 0 and i < s.n
+  assert j >= 0 and j < s.n
+
+template checkData =
+  assert s.data.len == s.expDataLen
 
 func index*(s: SimMatrix; i, j: int): int =
   checkBounds
   assert i != j
   if i < j:
-    s.n*i - (i + 1)*(i+2) div 2 + j
+    s.n*i - ((i + 1)*(i+2)) div 2 + j
   else:
     s.index(j, i)
 
 func `[]`*(s: SimMatrix; i, j: int): float =
   checkBounds
+  checkData
   if i == j:
     s.pref
   elif i < j:
@@ -60,14 +73,41 @@ iterator pairs*(s: SimMatrix): (int, int) =
 func `$`*(s: SimMatrix): string =
   for i in 0 ..< s.n:
     for j in 0 ..< s.n:
-      result.add fmt"{s[i, j]:>6.2f}"
+      result.add fmt"{s[i, j]:>7.2f}"
     result.add '\n'
+  
+func toSimMatrix*(points: seq[Point]): SimMatrix =
+  result.n = len points
+  result.data = newSeqUninitialized[float](result.expDataLen)
+  for i, j in result:
+    result.data[result.index(i, j)] = sim(points[i], points[j])
 
 when isMainModule:
-  let s = SimMatrix(n: 4, pref: 0.0, data: @[1.0, 2, 3, 4, 5, 6])
-  for i, j in s:
-    stdout.write s.index(i, j)
-    stdout.write " "
-    if j == s.n - 1:
-      stdout.write '\n'
-  echo s
+  import nimib
+  nbInit
+
+  block:  
+    nbCode:
+      let s = SimMatrix(n: 4, pref: 0.0, data: @[1.0, 2, 3, 4, 5, 6])
+      for i, j in s:
+        stdout.write s.index(i, j)
+        stdout.write " "
+        if j == s.n - 1:
+          stdout.write '\n'
+    nbCode:
+      echo s
+  
+  nbCode:
+    let points: seq[Point] = @[
+      (-3.0, -1.0),
+      (-2.0, -2.0),
+      (-1.0, -3.0),
+      (1.0, 2.0),
+      (2.0, 1.0),
+      (2.0, 2.0),
+      (2.0, 3.0),
+      (3.0, 2.0),
+    ] 
+    let s = toSimMatrix points
+    echo s
+  nbSave
