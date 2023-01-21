@@ -1,6 +1,3 @@
 # affprop
 
-Affinity Propagation in Nim for Python
-
-## Algorithm
-
+Affinity Propagation in Nim for Python (and Nim) - WIP
