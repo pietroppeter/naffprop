@@ -26,6 +26,7 @@
 - [x] 8 test points
 - [x] toSimMatrix
 - [x] minimal matrix module
+- a rust fast implementation: https://twitter.com/chrisjneely/status/1493353597899194370?s=46&t=agUJBpAHOUufiZLX0Y0iHg
 
 ## similarity
 
