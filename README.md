@@ -116,7 +116,7 @@ uv run benchmark.py      # naffprop vs scikit-learn
 
 The project started during an [Open Source Saturday](https://www.meetup.com/it-IT/Open-Source-Saturday-Milano/)
 in 2023, as an experiment in using Nim as a Cython alternative; that first version is in the
-git history.
+git history but it never went anywhere. It restarted with Claude in 2026.
 
 [Affinity propagation]: https://en.wikipedia.org/wiki/Affinity_propagation
 [apcluster]: https://cran.r-project.org/package=apcluster
