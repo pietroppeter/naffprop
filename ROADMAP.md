@@ -41,7 +41,8 @@ documents written in Nim with [nimib](https://github.com/pietroppeter/nimib), fo
 
 Context:
 - [If math is more than proof, we need to better celebrate the rest of it](https://terrytao.wordpress.com/2026/09/18/if-math-is-more-than-proof-we-need-to-better-celebrate-the-rest-of-it/)
-  (Terence Tao's blog), on giving motivated explanations the standing of proofs.
+  (Grant Sanderson's guest post on Terence Tao's blog), on giving motivated explanations the
+  standing of proofs.
 - Simon Willison, [My answers to the questions I posed about porting open source code with LLMs](https://simonwillison.net/2026/Jan/11/answers/),
   including where the value of a library mostly written by AI lies: in how much it is used.
 
