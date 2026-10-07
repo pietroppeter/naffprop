@@ -4,7 +4,7 @@
 
 import std/math
 import nimpy, nimpy_numpy
-import ap, sparse, leveraged
+import ap, sparse, leveraged, scaleap
 
 proc view[T](a: NumpyArray[T]): MatrixView[T] =
   ## The elements of a square C-contiguous array, where numpy stores them.
@@ -14,25 +14,26 @@ proc isFloat32(o: PyObject): bool =
   o.dtype.name.to(string) == "float32"
 
 proc run[T](s: NumpyArray[T], p: seq[float], maxits, convits: int,
-            damping: float, noise: bool, seed: int64):
+            damping: float, noise: bool, seed: int64, pruned: bool):
     (seq[int], seq[int], int, bool, float, float, float) =
   let m = s.view
   m.prepare(p, noise, seed)
-  let r = affinityPropagation(m, maxits, convits, damping)
+  let r = if pruned: affinityPropagationPruned(m, maxits, convits, damping)
+          else: affinityPropagation(m, maxits, convits, damping)
   (r.exemplars, r.labels, r.iterations, r.converged, r.netsim, r.dpsim,
    r.expref)
 
 proc apcluster(s: PyObject, p: seq[float], maxits, convits: int,
-               damping: float, noise: bool, seed: int64):
+               damping: float, noise: bool, seed: int64, pruned: bool):
     (seq[int], seq[int], int, bool, float, float, float) {.exportpy.} =
   ## Affinity propagation on the similarities `s` (n x n, float32 or float64,
   ## C-contiguous, overwritten: noise and preferences) with preferences `p`
   ## (1 or n values). Returns (exemplars, labels, iterations, converged,
-  ## netsim, dpsim, expref).
+  ## netsim, dpsim, expref). With `pruned`, ScaleAP's pruning (scaleap.nim).
   if s.isFloat32:
-    run(asNumpyArray[float32](s, writable = true), p, maxits, convits, damping, noise, seed)
+    run(asNumpyArray[float32](s, writable = true), p, maxits, convits, damping, noise, seed, pruned)
   else:
-    run(asNumpyArray[float64](s, writable = true), p, maxits, convits, damping, noise, seed)
+    run(asNumpyArray[float64](s, writable = true), p, maxits, convits, damping, noise, seed, pruned)
 
 proc toSeqInt(a: NumpyArray[int64]): seq[int] =
   result = newSeq[int](a.size)

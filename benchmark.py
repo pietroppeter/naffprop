@@ -112,3 +112,18 @@ for n in LARGE:
     print(f"| {n:,} | {full['time']:.2f} | {sp['time']:.2f} | {lev['time']:.2f} | {full_mem:.0f} "
           f"| {sp_mem:.0f} | {lev['mem']:.0f} | {full['k']} / {sp['k']} / {lev['k']} "
           f"| {ari(full, sp):.2f} | {ari(full, lev):.2f} |", flush=True)
+
+print("\nScaleAP's pruning (scaleap=True), with R's defaults, against the dense loop, in float64 and "
+      "in float32 with copy=False. Time (s), extra peak memory (MiB), and whether the clusters "
+      "are the same.\n")
+print("| n | dense | scaleap | speedup | dense memory | scaleap memory | float32 dense | float32 scaleap "
+      "| float32 dense memory | float32 scaleap memory | same clusters |")
+print("|--:|------:|--------:|--------:|-------------:|---------------:|--------------:|----------------:"
+      "|---------------------:|-----------------------:|:-------------:|")
+for n in [2_000, 4_000, 8_000]:
+    d, s, d32, s32 = (run(lib, n, 0.9, 1000, 100) for lib in (
+        "naffprop", "naffprop-scaleap", "naffprop-f32-inplace", "naffprop-f32-inplace-scaleap"))
+    same = d["labels"] == s["labels"] and d32["labels"] == s32["labels"]
+    print(f"| {n:,} | {d['time']:.2f} | {s['time']:.2f} | {d['time'] / s['time']:.1f}x "
+          f"| {d['mem']:.0f} | {s['mem']:.0f} | {d32['time']:.2f} | {s32['time']:.2f} "
+          f"| {d32['mem']:.0f} | {s32['mem']:.0f} | {'yes' if same else 'no'} |", flush=True)

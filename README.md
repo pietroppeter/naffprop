@@ -17,6 +17,7 @@ AffinityPropagation(n_clusters=5)              # exactly 5 clusters: R's apclust
 AffinityPropagation(affinity="precomputed").fit(S)   # your own similarity matrix, dense or sparse
 AffinityPropagation(leveraged=0.1).fit(X)      # large n: R's apclusterL on 10% of the points
 AffinityPropagation().fit(X.astype("float32")) # half the memory
+AffinityPropagation(scaleap=True).fit(X)       # ScaleAP: the same clusters, faster, less memory
 ```
 
 The same features are also available as functions named after R's:
@@ -31,6 +32,7 @@ pmin, pmax = preference_range(S)
 res = apcluster(S_sparse)       # a scipy.sparse matrix: only the stored pairs are linked
 res = apcluster_l(X, frac=0.1, sweeps=5)   # leveraged, as R's apclusterL
 res = apcluster(S, dtype="float32", copy=False)   # least memory: float32, no copy of S
+res = apcluster(S, scaleap=True)                  # ScaleAP's pruning: the same result
 ```
 
 ## Compared with scikit-learn and R
@@ -54,6 +56,7 @@ tests). The differences are in what is offered around it:
 | leveraged AP (large n) | no | `apclusterL` | `leveraged`, `apcluster_l` |
 | float32 (half the memory) | no | no | `dtype`, float32 input |
 | work in the similarity matrix, no copy | `copy=False` | no | `copy=False` |
+| ScaleAP's pruning (same clusters, faster, less memory) | no | no | `scaleap` |
 | exemplar-based agglomerative clustering | no | `aggExCluster` | [roadmap](ROADMAP.md) |
 
 scikit-learn's defaults often stop before convergence. In the benchmark below, at 2,000 and 4,000
@@ -123,7 +126,8 @@ For large n, with R's defaults: sparse similarities (the 10% nearest neighbours 
 
 Sparse finds the same clustering. Leveraged finds about as many clusters, but cuts the blobs
 differently: the median preference gives 37 to 55 clusters for 10 blobs, so where a blob is
-split depends on which points are sampled.
+split depends on which points are sampled. Its net similarity, the objective AP maximizes, is only 1.5-2.5%
+lower than the full run's ([experiments](experiments/README.md)).
 
 naffprop needs three n x n matrices (a copy of the similarities, the responsibilities and the
 availabilities), as R does. scikit-learn needs four or five. When both converge they find the
@@ -136,6 +140,74 @@ not offered: run through the numpy port of the MATLAB code, it changed the clust
 data sets, as soon as the similarities left its range of about 6.5e4 or n reached 1,000. The
 [readability notes](docs/readability.md) compare the Nim loop with the original, step by step.
 
+## Scaling to large n
+
+Three options go beyond the dense loop. They differ in what they keep exact and in what still
+grows with n^2:
+
+| | `scaleap=True` | sparse similarities | `leveraged` (`apcluster_l`) |
+|:--|:--|:--|:--|
+| result | the dense one | exact AP on the pairs kept | approximate: exemplars only among a sample |
+| similarities in memory | n x n | the pairs kept | n x (sample) |
+| messages in memory | the close pairs (a few %) | the pairs kept | n x (sample) |
+| time per iteration | reads n x n | the pairs kept | n x (sample), per sweep |
+| what you choose | nothing | which pairs, e.g. the k nearest neighbours | the sample fraction and the sweeps |
+| in the benchmark (blobs) | same clusters, 2-3x faster | same clusters with 10% neighbours, 7x faster at n = 8,000 | net similarity 1.5-2.5% lower, 2.6x faster |
+
+- **scaleap** is the safe choice whenever the n x n similarities fit in memory (as float32 with
+  `copy=False` they are the only n^2 cost).
+- **Sparse** scales furthest, but the neighbour graph is yours to build without an n x n matrix,
+  too few neighbours can split a cluster, and the default preference is the median of the pairs
+  kept: the close ones, so more clusters than with the dense median.
+- **Leveraged** needs only the data and a fraction of the points, so it works when nothing
+  n x n fits; the clustering depends on the sample.
+
+ScaleAP's pruning on sparse similarities would combine the first two ([roadmap](ROADMAP.md)).
+
+## ScaleAP
+
+`scaleap=True` uses the pruning of ScaleAP (Shiokawa, [*Scalable affinity propagation for
+massive datasets*](https://ojs.aaai.org/index.php/AAAI/article/view/17160), AAAI 2021). Most
+messages need not be stored one by one:
+
+- The responsibility r(i, k), for a k that has never been the best candidate of i, follows the
+  same update as all the other such pairs of row i: it is (1 - damping^t) s(i, k) minus a
+  number per row.
+- The availability a(i, k), for a pair whose responsibility has never been positive, follows the
+  same update as all the other such pairs of column k: it is a number per column.
+
+Only the other pairs, a few close neighbours per point, store their messages. So instead of the
+responsibilities and availabilities (two n x n matrices) it needs O(n) numbers plus those pairs,
+and each iteration reads the similarities once instead of reading and writing three matrices.
+
+The updates are Frey and Dueck's, as in the rest of naffprop, so it finds the same exemplars
+(checked in the tests against the numpy port of the MATLAB code and against the dense loop). This
+is where it departs from the paper: the paper's equations, and its [C++ reference
+code](https://github.com/LazyShion/ScaleAP) (MIT), freeze the self-responsibility r(k, k) at
+s(k, k) - max s(k, j) and compute the availabilities from the previous iteration's
+responsibilities. Run on blobs with the same similarities and preference (no noise), the C++
+code reached a 5% lower net similarity (the objective AP maximizes) with damping 0.9. With
+damping 0.5, its default, it did not converge, and almost every point was its own cluster. It
+was also slower than the dense loop by two to three orders of magnitude (154 s against 0.27 s
+at n = 600), because its availability update takes O(n) per candidate pair. The
+[experiments](experiments/README.md) reproduce these numbers. The time is still O(n^2) per
+iteration, since the best candidate of each point needs its whole row of similarities; the
+paper's O(n) counts the messages updated.
+
+`benchmark.py` compares it with the dense loop, with R's defaults, on the cloud container above
+(naffprop 0.2.0 plus this change). Time (s) and extra peak memory (MiB): with float32 and
+`copy=False`, the extra memory is the stored pairs and O(n) buffers.
+
+| n | dense | scaleap | speedup | dense memory | scaleap memory | float32 dense | float32 scaleap | float32 dense memory | float32 scaleap memory | same clusters |
+|--:|------:|--------:|--------:|-------------:|---------------:|--------------:|----------------:|---------------------:|-----------------------:|:-------------:|
+| 2,000 | 4.87 | 2.23 | 2.2x | 93 | 42 | 4.27 | 2.58 | 32 | 9 | yes |
+| 4,000 | 26.98 | 9.25 | 2.9x | 377 | 162 | 19.10 | 9.76 | 132 | 40 | yes |
+| 8,000 | 137.58 | 43.58 | 3.2x | 1455 | 660 | 104.88 | 51.83 | 478 | 171 | yes |
+
+The bigger the clusters, the more pairs are stored: about 4% of them at n = 4,000 in the
+benchmark. With low damping, where a run is sensitive to rounding (float32 and float64 already
+disagree there), it can end on different exemplars than the dense loop.
+
 ## How it is built
 
 ```
@@ -145,6 +217,7 @@ src/naffprop/matrix.nim         # a dense square matrix: all the linear algebra 
 src/naffprop/ap.nim             # the algorithm and the preference range, plain Nim
 src/naffprop/sparse.nim         # the algorithm on the stored pairs of a sparse matrix
 src/naffprop/leveraged.nim      # leveraged AP: the similarities to a sample of the points
+src/naffprop/scaleap.nim        # ScaleAP's pruning of the dense loop
 src/naffprop/rng.nim            # the seeded noise generator (or std/random)
 src/naffprop/core.nim           # nimpy exports, importable as naffprop.core
 src/naffprop/__init__.py        # R-style functions: argument checks, preferences, apcluster_k
@@ -152,6 +225,7 @@ src/naffprop/_estimator.py      # the scikit-learn estimator
 tests/reference.py              # numpy port of Frey and Dueck's MATLAB code
 benchmark.py                    # naffprop vs scikit-learn (a uv script: deps in its header)
 benchmark_case.py               # one case in its own process: time and peak memory
+experiments/                    # scripts behind design decisions, with their results
 ```
 
 Affinity propagation needs no linear algebra library. Its messages are elementwise updates plus
@@ -187,6 +261,8 @@ uv run benchmark.py      # naffprop vs scikit-learn
 - Frey and Dueck, [Clustering by Passing Messages Between Data Points](https://doi.org/10.1126/science.1136800), Science 2007
 - [apcluster] (R) by Bodenhofer, Kothmeier and Hochreiter, and its [paper](https://doi.org/10.1093/bioinformatics/btr406)
 - [scikit-learn's AffinityPropagation](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.AffinityPropagation.html)
+- Shiokawa, [Scalable Affinity Propagation for Massive Datasets](https://ojs.aaai.org/index.php/AAAI/article/view/17160),
+  AAAI 2021, and its [C++ code](https://github.com/LazyShion/ScaleAP) (MIT)
 
 The source code naffprop was compared with, to check what changed since:
 

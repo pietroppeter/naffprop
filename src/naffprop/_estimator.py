@@ -34,6 +34,8 @@ class AffinityPropagation(ClusterMixin, BaseEstimator):
       the pairs it stores are linked (R's apcluster on a sparse matrix).
     - leveraged: leveraged affinity propagation (R's apclusterL), for large
       data sets.
+    - scaleap: ScaleAP's pruning (Shiokawa, AAAI 2021), the same clusters
+      with less memory and time.
 
     Parameters
     ----------
@@ -68,6 +70,11 @@ class AffinityPropagation(ClusterMixin, BaseEstimator):
     sweeps : int, default 5
         With leveraged: the number of samples tried; each keeps the exemplars
         found so far. The clustering with the largest net similarity is kept.
+    scaleap : bool, default False
+        Use ScaleAP's pruning (Shiokawa, AAAI 2021): the same clusters, but
+        only the messages between close pairs are stored, which saves two
+        n x n matrices, and it is faster. Not with a sparse affinity or
+        leveraged.
     verbose : bool, default False
     random_state : int, RandomState instance or None, default None
         Seed of the tiny noise added to the similarities to break ties.
@@ -83,7 +90,7 @@ class AffinityPropagation(ClusterMixin, BaseEstimator):
     def __init__(self, *, damping=0.9, max_iter=1000, convergence_iter=100,
                  copy=True, preference=None, preference_quantile=None,
                  n_clusters=None, affinity="euclidean", leveraged=None, sweeps=5,
-                 verbose=False, random_state=None):
+                 scaleap=False, verbose=False, random_state=None):
         self.damping = damping
         self.max_iter = max_iter
         self.convergence_iter = convergence_iter
@@ -94,6 +101,7 @@ class AffinityPropagation(ClusterMixin, BaseEstimator):
         self.affinity = affinity
         self.leveraged = leveraged
         self.sweeps = sweeps
+        self.scaleap = scaleap
         self.verbose = verbose
         self.random_state = random_state
 
@@ -133,6 +141,10 @@ class AffinityPropagation(ClusterMixin, BaseEstimator):
                       lam=self.damping, seed=seed, dtype=X.dtype)
         if (sparse or self.leveraged is not None) and self.n_clusters is not None:
             raise ValueError("n_clusters is not supported with sparse similarities or leveraged")
+        if self.scaleap:
+            if sparse or self.leveraged is not None:
+                raise ValueError("scaleap is not supported with sparse similarities or leveraged")
+            kwargs["scaleap"] = True
         if self.leveraged is not None and n > 1:
             res = naffprop.apcluster_l(X, frac=self.leveraged, sweeps=self.sweeps,
                                        p=self.preference, q=self.preference_quantile, **kwargs)

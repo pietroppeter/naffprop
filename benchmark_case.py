@@ -12,7 +12,8 @@ sklearn, or naffprop with its options: naffprop (float64), naffprop-f32
 similarity matrix), naffprop-sparse (the 10% nearest neighbours of each point
 only, as a scipy.sparse matrix), naffprop-leveraged (apcluster_l on 10% of the
 points, 5 sweeps: the n x n similarity matrix is never built, so its memory
-includes its similarities).
+includes its similarities). A -scaleap suffix (naffprop-scaleap,
+naffprop-f32-inplace-scaleap, ...) uses ScaleAP's pruning (scaleap=True).
 """
 
 import json
@@ -72,12 +73,13 @@ def main(lib, n, damping, max_iter, conv):
         s = nearest_neighbours(x, n // 10)
     elif lib != "naffprop-leveraged":
         s = similarities(x, np.float32 if "-f32" in lib else np.float64)
-    if lib in ("naffprop", "naffprop-f32", "naffprop-f32-inplace", "naffprop-sparse"):
+    base = lib.removesuffix("-scaleap")
+    if base in ("naffprop", "naffprop-f32", "naffprop-f32-inplace", "naffprop-sparse"):
         from naffprop import apcluster
 
         def fit():
             res = apcluster(s, p=p, lam=damping, maxits=max_iter, convits=conv, seed=0,
-                            copy=not lib.endswith("-inplace"))
+                            copy=not base.endswith("-inplace"), scaleap=lib != base)
             return res.labels, res.iterations
     elif lib == "naffprop-leveraged":
         from naffprop import apcluster_l

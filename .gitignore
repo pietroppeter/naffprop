@@ -4,3 +4,4 @@ dist/
 .nimlang/
 *.so
 *.pyd
+experiments/.scaleap/
