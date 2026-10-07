@@ -61,7 +61,7 @@ similarity matrix (blobs, 10 centers) with the same preference and parameters. E
 `benchmark_case.py` in its own process, which measures how much memory the fit needs on top of
 that matrix (Unix only). It first prints the machine it runs on: paste that with the table when
 you share a run. Timings depend on the machine and are noisy from run to run; naffprop has been
-1.0-2.6x faster than scikit-learn so far, and needed 45-80% of its extra memory.
+1.0-2.6x faster than scikit-learn so far, and needed a third to three quarters of its extra memory.
 
 One run on a cloud container:
 
