@@ -4,6 +4,6 @@
 # round differently and results could differ between platforms.
 switch("passC", "-ffp-contract=off")
 
-# NAFFPROP_STD_RANDOM=1 at build time: draw the noise with std/random (see rng.nim).
-if getEnv("NAFFPROP_STD_RANDOM") != "":
+# NAFFPROP_STD_RANDOM=1 at build time (only "1"): draw the noise with std/random (see rng.nim).
+if getEnv("NAFFPROP_STD_RANDOM") == "1":
   switch("define", "naffpropStdRandom")
