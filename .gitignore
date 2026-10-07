@@ -6,3 +6,6 @@ dist/
 *.pyd
 experiments/.scaleap/
 docs/explain/data/
+docs/explain/*.html
+docs/explain/deps/
+docs/explain/site/

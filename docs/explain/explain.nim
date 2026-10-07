@@ -6,8 +6,8 @@
 ## reads it. The types compile to JS too, so the page parses the JSON with
 ## std/json's `to`.
 
-import std/[algorithm, math, json]
-import matrix, ap, rng
+import std/[algorithm, math]
+import matrix, ap
 
 export matrix, ap
 
@@ -17,7 +17,6 @@ type
 
   Ap2DInput* = object
     ## Points in the plane and their similarities.
-    seed*: int64                    ## of the generated points (0 if given)
     points*: seq[Point]
     similarityMatrix*: Matrix[float]  ## negative squared distances, 0 on the
                                       ## diagonal: the preference goes there
@@ -54,6 +53,13 @@ func paperParameters*(): ApParameters =
   ## maxits and convits as naffprop's (and R's) defaults.
   ApParameters(damping: 0.5, quantile: 0.5, maxits: 1000, convits: 100)
 
+func fig1Parameters*(): ApParameters =
+  ## The animation's: more damping than the paper's, so that the exemplars
+  ## emerge over more iterations, and convits 10, so that it stops soon
+  ## after (with 0.9, new exemplars appear 6 or 7 iterations apart: fewer
+  ## stops before the third one).
+  ApParameters(damping: 0.9, quantile: 0.5, maxits: 1000, convits: 10)
+
 func negDistMatrix*(points: seq[Point]): Matrix[float] =
   ## Negative squared Euclidean distances, the similarity of the paper's Fig. 1.
   let n = points.len
@@ -62,8 +68,8 @@ func negDistMatrix*(points: seq[Point]): Matrix[float] =
     for k in 0 ..< n:
       result[i, k] = -((points[i].x - points[k].x) ^ 2 + (points[i].y - points[k].y) ^ 2)
 
-func initAp2DInput*(points: seq[Point], seed: int64 = 0): Ap2DInput =
-  Ap2DInput(seed: seed, points: points, similarityMatrix: negDistMatrix(points))
+func initAp2DInput*(points: seq[Point]): Ap2DInput =
+  Ap2DInput(points: points, similarityMatrix: negDistMatrix(points))
 
 func quantile*(xs: seq[float], q: float): float =
   ## As numpy's default (linear interpolation), so as naffprop's Python side.
@@ -81,23 +87,6 @@ func preferenceOf*(input: Ap2DInput, params: ApParameters): float =
     for k in 0 ..< s.n:
       if i != k: xs.add s[i, k]
   quantile(xs, params.quantile)
-
-proc generatePoints*(seed: int64, centers: openArray[(float, float, int)],
-                     sd: float): seq[Point] =
-  ## Points around the centers (x, y, how many), gaussian with deviation `sd`,
-  ## rounded to 2 decimals; the same for a seed on every platform (rng.nim).
-  var g = initRng(seed)
-  for (cx, cy, m) in centers:
-    for _ in 0 ..< m:
-      let x = round(cx + sd * g.gauss, 2)
-      let y = round(cy + sd * g.gauss, 2)
-      result.add Point(x: x, y: y)
-
-proc toy25*(seed: int64 = 7): Ap2DInput =
-  ## A stand-in for the paper's 25 points (ToyProblemData.txt, which we don't
-  ## have): three groups in [-1, 1]².
-  initAp2DInput(generatePoints(seed, [(-0.55, 0.45, 9), (0.5, 0.5, 8),
-                                      (0.05, -0.5, 8)], 0.17), seed)
 
 proc runAp*(input: Ap2DInput, params: ApParameters): ApRun =
   ## Runs naffprop's AP (no noise: the data is deterministic) and records the

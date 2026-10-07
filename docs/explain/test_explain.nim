@@ -1,7 +1,7 @@
 ## Checks of the explanation's data: nim c -r docs/explain/test_explain.nim, and
 ## nim js -d:nodejs -r docs/explain/test_explain.nim for the JS side.
 import std/[json, unittest]
-import explain
+import explain, toy25
 
 suite "explain data":
   test "quantile as numpy's default":
