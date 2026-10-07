@@ -32,6 +32,11 @@ def run(lib, n, damping, max_iter, conv):
     return json.loads(out.strip().splitlines()[-1])
 
 
+def ari(a, b):
+    from sklearn.metrics import adjusted_rand_score
+    return adjusted_rand_score(a["labels"], b["labels"])
+
+
 def sh(*cmd):
     try:
         return subprocess.run(cmd, check=True, capture_output=True, text=True).stdout.strip()
@@ -79,3 +84,31 @@ for n in SIZES:
         print(f"| {n:,} | {name} | {a['time']:.2f} | {b['time']:.2f} | {b['time'] / a['time']:.1f}x "
               f"| {a['mem']:.0f} | {b['mem']:.0f} | {a['k']} / {b['k']} | {a['its']} / {b['its']} |",
               flush=True)
+
+print("\nnaffprop's memory options, with R's defaults: float64 (the default), float32 "
+      "(dtype=np.float32), and float32 without a copy of the similarities (copy=False). "
+      "Time (s) and extra peak memory (MiB).\n")
+print("| n | float64 | float32 | float32, copy=False | float64 memory | float32 memory | float32, copy=False memory |")
+print("|--:|--------:|--------:|--------------------:|---------------:|---------------:|---------------------------:|")
+for n in SIZES:
+    r = [run(lib, n, 0.9, 1000, 100) for lib in ("naffprop", "naffprop-f32", "naffprop-f32-inplace")]
+    print(f"| {n:,} | " + " | ".join(f"{x['time']:.2f}" for x in r) + " | "
+          + " | ".join(f"{x['mem']:.0f}" for x in r) + " |", flush=True)
+
+LARGE = [4_000, 8_000]
+print("\nFor large n, with R's defaults: sparse similarities (the 10% nearest neighbours of each "
+      "point) and leveraged AP (10% of the points, 5 sweeps), against the full float64 run. "
+      "Time (s), memory (MiB) including the similarities, and agreement with the full "
+      "clustering (adjusted Rand index).\n")
+print("| n | full | sparse | leveraged | full memory | sparse memory | leveraged memory "
+      "| clusters | ARI sparse | ARI leveraged |")
+print("|--:|-----:|-------:|----------:|------------:|--------------:|-----------------:"
+      "|---------:|-----------:|--------------:|")
+for n in LARGE:
+    full, sp, lev = (run(lib, n, 0.9, 1000, 100)
+                     for lib in ("naffprop", "naffprop-sparse", "naffprop-leveraged"))
+    full_mem = full["mem"] + n * n * 8 / 2**20
+    sp_mem = sp["mem"] + (n * (n // 10)) * 12 / 2**20  # float64 values, int32 columns
+    print(f"| {n:,} | {full['time']:.2f} | {sp['time']:.2f} | {lev['time']:.2f} | {full_mem:.0f} "
+          f"| {sp_mem:.0f} | {lev['mem']:.0f} | {full['k']} / {sp['k']} / {lev['k']} "
+          f"| {ari(full, sp):.2f} | {ari(full, lev):.2f} |", flush=True)

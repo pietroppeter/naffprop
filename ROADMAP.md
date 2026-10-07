@@ -11,19 +11,20 @@ a scalable version from the literature, with everything benchmarked.
 - `AffinityPropagation`, passing scikit-learn's `check_estimator`.
 - `benchmark.py` against scikit-learn.
 - Released on PyPI, with wheels for 5 platforms cross-built by nimlang and tested on each OS.
+- Sparse similarities (R's apcluster on a sparse matrix): scipy.sparse input, messages on the
+  stored pairs only.
+- Leveraged affinity propagation (R's `apclusterL`): `apcluster_l` and `leveraged`.
+- float32 (`dtype`, float32 input) and `copy=False`: from 3 n x n float64 matrices down to 2
+  float32 ones. float16 was tried on the numpy port of the MATLAB code and dropped: it changed
+  the clusters when the similarities exceeded its range or n reached 1,000.
+- The contiguous fast path of nimpy_numpy 0.2.0: similarities used where numpy stores them.
 
 ## Next: from R's apcluster
 
-- **Sparse similarities**: a similarity matrix with only the pairs worth linking (e.g. the k
-  nearest neighbours), so memory grows with the number of pairs, not n^2. Needs a sparse
-  (COO/CSR) matrix type in naffprop and messages on the stored pairs only. In the estimator:
-  accept a `scipy.sparse` matrix with `affinity="precomputed"`.
-- **Leveraged affinity propagation** (R's `apclusterL`): runs on a random fraction of the
-  columns of the similarity matrix, several sweeps, keeping the best net similarity. Works from
-  a similarity function, so the full matrix is never built.
 - **Exemplar-based agglomerative clustering** (R's `aggExCluster`): merges the clusters found
   by AP into a hierarchy (dendrogram, `cutree`).
 - `details`: the net similarity at every iteration, to monitor convergence (R's `plot`).
+- `apcluster_k` and `preference_range` on sparse similarities.
 
 ## Explained implementation
 
@@ -51,19 +52,19 @@ Context:
 - Shiokawa, [*Scalable affinity propagation for massive datasets*](https://ojs.aaai.org/index.php/AAAI/article/view/17160),
   AAAI 2021: from O(n^2 T) to O(n T) time (T iterations). The similarities still take O(n^2)
   memory, so it pairs well with sparse similarities.
+  Reference implementation in C++ (MIT): [LazyShion/ScaleAP](https://github.com/LazyShion/ScaleAP).
 
 ## Performance
 
-- The dense loop is memory-bound: three n x n float64 matrices are read on every iteration.
-  Options: float32 messages, fusing the responsibility and availability passes further, threads
-  over rows, SIMD.
-- Contiguous fast path for the input copy and `neg_dist_mat` output with nimpy_numpy's
-  `toOpenArray`/`unsafeData`, once a nimpy_numpy release includes them.
+- The dense loop is memory-bound: three n x n matrices are read on every iteration. Options left:
+  threads over rows, SIMD. float32 halves the memory but is not faster yet (the column sums are
+  accumulated in float64).
+- Compare the speed of float32 and float64 on Apple silicon, where memory bandwidth differs.
 
 ## Benchmarks
 
 - Add R's apcluster to `benchmark.py` (through `Rscript`, when it is installed).
-- Benchmark each new feature: sparse vs dense, leveraged vs full, the scalable variant.
+- Benchmark sparse vs dense and leveraged vs full, then the scalable variant.
 
 ## Packaging
 
