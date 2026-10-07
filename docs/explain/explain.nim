@@ -6,13 +6,14 @@
 ## reads it. The types compile to JS too, so the page parses the JSON with
 ## std/json's `to`.
 
-import std/[math, json]
+import std/[algorithm, math, json]
 import matrix, ap, rng
 
 export matrix, ap
 
 type
-  Point* = tuple[x, y: float]
+  Point* = object
+    x*, y*: float
 
   Ap2DInput* = object
     ## Points in the plane and their similarities.
@@ -48,11 +49,6 @@ type
                             ## iteration, refined (so they can differ from the
                             ## last `iterations.exemplars`, which are not)
 
-func `%`*(p: Point): JsonNode =
-  ## std/json has no `%` for tuples: a point as {"x": .., "y": ..}, which `to`
-  ## reads back.
-  %*{"x": p.x, "y": p.y}
-
 func paperParameters*(): ApParameters =
   ## The paper's Fig. 1: damping 0.5, the median similarity as preference;
   ## maxits and convits as naffprop's (and R's) defaults.
@@ -71,13 +67,7 @@ func initAp2DInput*(points: seq[Point], seed: int64 = 0): Ap2DInput =
 
 func quantile*(xs: seq[float], q: float): float =
   ## As numpy's default (linear interpolation), so as naffprop's Python side.
-  var v = xs
-  # insertion sort: no std/algorithm, so this compiles anywhere; n is small
-  for i in 1 ..< v.len:
-    var j = i
-    while j > 0 and v[j - 1] > v[j]:
-      swap(v[j - 1], v[j])
-      dec j
+  let v = sorted(xs)
   let h = q * float(v.len - 1)
   let lo = int(floor(h))
   let hi = min(lo + 1, v.len - 1)
@@ -101,7 +91,7 @@ proc generatePoints*(seed: int64, centers: openArray[(float, float, int)],
     for _ in 0 ..< m:
       let x = round(cx + sd * g.gauss, 2)
       let y = round(cy + sd * g.gauss, 2)
-      result.add (x, y)
+      result.add Point(x: x, y: y)
 
 proc toy25*(seed: int64 = 7): Ap2DInput =
   ## A stand-in for the paper's 25 points (ToyProblemData.txt, which we don't

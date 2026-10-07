@@ -154,15 +154,11 @@ type OnIteration*[T] = proc (it: int, r, a: Matrix[T], isEx: seq[bool]) {.closur
   ## availabilities and which points are exemplars (r(k, k) + a(k, k) > 0):
   ## to record the messages, e.g. for the interactive explanation in docs/.
 
-proc affinityPropagation*[T](s: MatrixView[T], maxits = 1000, convits = 100,
-                             damping = 0.9, onIteration: OnIteration[T] = nil): ApResult =
-  ## Affinity propagation on the similarities `s`, whose diagonal holds the
-  ## preferences. Stops when the exemplars have not changed for `convits`
-  ## iterations, or after `maxits` iterations. Similarities must be finite:
-  ## `prepare` turns -Inf (a pair never to link) into -maxFloat.
-  ## The messages are stored in T (float32 halves the memory); the column
-  ## sums are accumulated in float64. `onIteration`, if given, sees the
-  ## messages after every iteration.
+proc affinityPropagationImpl[T; record: static bool](s: MatrixView[T],
+    maxits, convits: int, damping: float, onIteration: OnIteration[T]): ApResult =
+  ## The algorithm of `affinityPropagation`. `record` is known at compile
+  ## time: without it the call to `onIteration` is not even compiled, so the
+  ## plain run is the same code as if the hook did not exist.
   let n = s.n
   let lam = T(damping)
   var
@@ -204,11 +200,26 @@ proc affinityPropagation*[T](s: MatrixView[T], maxits = 1000, convits = 100,
     # Exemplars: a(i, i) + r(i, i) > 0. Converged when no point changed its
     # status in the last convits iterations.
     for i in 0 ..< n: isEx[i] = a[i, i] + r[i, i] > 0
-    if onIteration != nil: onIteration(it, r, a, isEx)
+    when record: onIteration(it, r, a, isEx)
     if conv.update(it, isEx, maxits): break
     inc it
 
   result = finish(s, conv, it, isEx)
+
+proc affinityPropagation*[T](s: MatrixView[T], maxits = 1000, convits = 100,
+                             damping = 0.9): ApResult {.inline.} =
+  ## Affinity propagation on the similarities `s`, whose diagonal holds the
+  ## preferences. Stops when the exemplars have not changed for `convits`
+  ## iterations, or after `maxits` iterations. Similarities must be finite:
+  ## `prepare` turns -Inf (a pair never to link) into -maxFloat.
+  ## The messages are stored in T (float32 halves the memory); the column
+  ## sums are accumulated in float64.
+  affinityPropagationImpl[T, false](s, maxits, convits, damping, nil)
+
+proc affinityPropagation*[T](s: MatrixView[T], maxits, convits: int,
+                             damping: float, onIteration: OnIteration[T]): ApResult =
+  ## The same, calling `onIteration` with the messages after every iteration.
+  affinityPropagationImpl[T, true](s, maxits, convits, damping, onIteration)
 
 proc preferenceRange*[T](s: MatrixView[T], exact = false): (float, float) =
   ## The preferences between which AP finds from 1 or 2 clusters (the lower
