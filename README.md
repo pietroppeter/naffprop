@@ -59,8 +59,15 @@ points they hit the 200-iteration limit, while R's defaults converge.
 `uv run benchmark.py` runs naffprop and `sklearn.cluster.affinity_propagation` on the same
 similarity matrix (blobs, 10 centers) with the same preference and parameters. Each case runs
 `benchmark_case.py` in its own process, which measures how much memory the fit needs on top of
-that matrix (Unix only). One run on
-a 4-core Linux container (the timings are noisy from run to run):
+that matrix (Unix only). It first prints the machine it runs on: paste that with the table when
+you share a run. Timings depend on the machine and are noisy from run to run; naffprop has been
+1.0-2.6x faster than scikit-learn so far, and needed 45-80% of its extra memory.
+
+One run on a cloud container:
+
+- CPU: Intel(R) Xeon(R) Processor @ 2.80GHz, 4 cores, 16 GiB RAM
+- OS: Linux (x86_64)
+- Python 3.13, naffprop 0.1.0, numpy 2.5.3, scikit-learn 1.9.1
 
 | n | parameters | naffprop (s) | scikit-learn (s) | speedup | naffprop memory (MiB) | scikit-learn memory (MiB) | clusters | iterations |
 |--:|:-----------|---------:|-------------:|--------:|----------------:|--------------------:|---------:|-----------:|
