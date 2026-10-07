@@ -3,23 +3,96 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
 jobs:
-  # naffprop is not published yet: it is installed from source (an sdist, or
-  # `uv add git+https://github.com/pietroppeter/naffprop`), which compiles the
-  # Nim code through nimlang. This job takes that path, then runs the tests.
-  test:
+  # One Linux machine builds the sdist and the wheels for every platform: nimlang
+  # cross-compiles through zig cc, so no cibuildwheel and no per-OS build runners.
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
-      - name: Build the sdist
+      - name: Build sdist
         run: uv build --sdist --out-dir dist
-      - name: Install from the sdist
+      - name: Build wheels
         run: |
-          uv venv test-env
-          uv pip install --python test-env dist/*.tar.gz pytest
+          for target in x86_64-linux-gnu.2.17 aarch64-linux-gnu.2.17 aarch64-macos x86_64-macos x86_64-windows-gnu; do
+            echo "::group::$target"
+            NIMLANG_TARGET=$target uv build --wheel --out-dir dist
+            echo "::endgroup::"
+          done
+          ls -l dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+  # Each wheel installed and tested on its own OS, in a venv with no nimlang and no ziglang.
+  test:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-14, macos-15-intel, windows-latest]
+        python: ["3.9", "3.14"]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Install the wheel for this platform
+        run: |
+          uv venv -p ${{ matrix.python }} user-env
+          uv pip install --python user-env numpy scikit-learn pytest
+          # --no-index and --only-binary: fail if no prebuilt wheel fits, never compile.
+          uv pip install --python user-env --no-index --only-binary :all: --no-deps --find-links dist naffprop
+          if [ "$RUNNER_OS" = "Windows" ]; then bin=user-env/Scripts; else bin=user-env/bin; fi
+          echo "$PWD/$bin" >> "$GITHUB_PATH"
+      - name: No build toolchain installed
+        run: |
+          uv pip list --python user-env
+          python -c "import importlib.util as u; assert not u.find_spec('nimlang') and not u.find_spec('ziglang')"
       - name: Tests
-        run: test-env/bin/python -m pytest -v -p no:cacheprovider tests
+        run: python -m pytest -v -p no:cacheprovider tests
+
+  # Installing from the sdist compiles the Nim code: this is the path that does need nimlang.
+  sdist:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Build and install from the sdist
+        run: |
+          uv venv sdist-env
+          uv pip install --python sdist-env --no-binary naffprop dist/*.tar.gz pytest
+          sdist-env/bin/python -m pytest -v -p no:cacheprovider tests
+
+  publish:
+    # Push a vX.Y.Z tag to release to PyPI (needs a PyPI trusted publisher for this repo,
+    # workflow ci.yml, environment pypi).
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, sdist]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # PyPI trusted publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1

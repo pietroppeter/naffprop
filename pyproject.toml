@@ -32,4 +32,6 @@ cache-keys = [
     { file = "pyproject.toml" },
     { file = "nimlang.lock" },
     { file = "src/**/*.nim" },
+    { file = "src/**/*.nims" },
+    { env = "NAFFPROP_STD_RANDOM" },
 ]

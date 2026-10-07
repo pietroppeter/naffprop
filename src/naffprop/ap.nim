@@ -8,8 +8,8 @@
 ##
 ## Pure Nim (no nimpy): `core.nim` exposes it to Python.
 
-import std/[fenv, math, random]
-import matrix
+import std/[fenv, math]
+import matrix, rng
 
 export matrix
 
@@ -29,7 +29,7 @@ type
 proc addNoise*(s: var Matrix, seed: int64) =
   ## Adds a tiny gaussian noise to every similarity, as R and scikit-learn do,
   ## so that ties (e.g. duplicated points) don't make the messages oscillate.
-  var r = initRand(seed)
+  var r = initRng(seed)
   for x in s.data.mitems:
     x += (epsilon(float) * x + minimumPositiveValue(float) * 100) * r.gauss()
 
