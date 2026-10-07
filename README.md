@@ -121,12 +121,16 @@ row maxima and column sums, so `matrix.nim` is a 20-line row-major `seq[float]`.
 on Arraymancer or BLAS, which keeps the door open to Nim's JS backend.
 [nimpy-numpy](https://github.com/pietroppeter/nimpy-numpy) passes numpy arrays to Nim.
 
-naffprop is not on PyPI yet. Install it from GitHub; uv builds it with nimlang, so no Nim and
-no C compiler are needed:
+Install it from PyPI:
 
 ```sh
-uv add git+https://github.com/pietroppeter/naffprop
+uv add naffprop        # or: pip install naffprop
 ```
+
+Wheels are built for Linux (x86_64, aarch64), macOS (arm64, x86_64) and Windows (x86_64), all
+cross-compiled by nimlang from one Linux CI job; one wheel per platform serves every Python
+from 3.9. Elsewhere pip and uv build the sdist, which needs nimlang but no Nim and no C
+compiler. To work on naffprop itself:
 
 ```sh
 uv sync                  # builds the extension
@@ -139,6 +143,13 @@ uv run benchmark.py      # naffprop vs scikit-learn
 - Frey and Dueck, [Clustering by Passing Messages Between Data Points](https://doi.org/10.1126/science.1136800), Science 2007
 - [apcluster] (R) by Bodenhofer, Kothmeier and Hochreiter, and its [paper](https://doi.org/10.1093/bioinformatics/btr406)
 - [scikit-learn's AffinityPropagation](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.AffinityPropagation.html)
+
+The source code naffprop was compared with, to check what changed since:
+
+| | version compared | source |
+|:--|:--|:--|
+| R apcluster | 1.4.14 (2025-09-09) | [GitHub mirror of CRAN](https://github.com/cran/apcluster): [`apcluster`](https://github.com/cran/apcluster/blob/master/R/apcluster-methods.R) and its [C++ loop](https://github.com/cran/apcluster/blob/master/src/apclusterC.cpp), [`apclusterK`](https://github.com/cran/apcluster/blob/master/R/apclusterK-methods.R), [`preferenceRange`](https://github.com/cran/apcluster/blob/master/R/preferenceRange-methods.R) and its [C++](https://github.com/cran/apcluster/blob/master/src/preferenceRangeC.cpp), [NEWS](https://github.com/cran/apcluster/blob/master/inst/NEWS) |
+| scikit-learn | 1.9.1 | [`sklearn/cluster/_affinity_propagation.py`](https://github.com/scikit-learn/scikit-learn/blob/main/sklearn/cluster/_affinity_propagation.py) |
 
 The project started during an [Open Source Saturday](https://www.meetup.com/it-IT/Open-Source-Saturday-Milano/)
 in 2023, as an experiment in using Nim as a Cython alternative; that first version is in the

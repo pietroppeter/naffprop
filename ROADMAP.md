@@ -10,6 +10,7 @@ a scalable version from the literature, with everything benchmarked.
 - `preference_range` and `apcluster_k` / `n_clusters` (R's preferenceRange and apclusterK).
 - `AffinityPropagation`, passing scikit-learn's `check_estimator`.
 - `benchmark.py` against scikit-learn.
+- Released on PyPI, with wheels for 5 platforms cross-built by nimlang and tested on each OS.
 
 ## Next: from R's apcluster
 
@@ -45,6 +46,4 @@ a scalable version from the literature, with everything benchmarked.
 
 ## Packaging
 
-- Publish on PyPI (the name `naffprop` is free), with wheels cross-built by nimlang.
-- CI on macOS and Windows too.
 - The JS backend (interactive visualizations): `ap.nim` and `matrix.nim` are plain Nim.

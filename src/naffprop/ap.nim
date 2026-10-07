@@ -8,7 +8,7 @@
 ##
 ## Pure Nim (no nimpy): `core.nim` exposes it to Python.
 
-import std/[fenv, math, random]
+import std/[fenv, math]
 import matrix
 
 export matrix
@@ -26,10 +26,31 @@ type
     expref*: float        ## sum of the preferences of the exemplars
     netsim*: float        ## dpsim + expref, the objective AP maximizes
 
+type Rng = object
+  ## splitmix64: a small seeded generator. std/random is not used because it
+  ## imports std/sysrand, which links macOS's Security framework, and that
+  ## framework is not available when cross-compiling with zig cc.
+  state: uint64
+
+proc next(r: var Rng): uint64 =
+  r.state += 0x9E3779B97F4A7C15'u64
+  var z = r.state
+  z = (z xor (z shr 30)) * 0xBF58476D1CE4E5B9'u64
+  z = (z xor (z shr 27)) * 0x94D049BB133111EB'u64
+  z xor (z shr 31)
+
+proc uniform(r: var Rng): float =
+  ## In (0, 1]: 53 random bits.
+  float((r.next shr 11) + 1) * pow(2.0, -53)
+
+proc gauss(r: var Rng): float =
+  ## Standard normal, by the Box-Muller transform.
+  sqrt(-2 * ln(r.uniform)) * cos(2 * PI * r.uniform)
+
 proc addNoise*(s: var Matrix, seed: int64) =
   ## Adds a tiny gaussian noise to every similarity, as R and scikit-learn do,
   ## so that ties (e.g. duplicated points) don't make the messages oscillate.
-  var r = initRand(seed)
+  var r = Rng(state: cast[uint64](seed))
   for x in s.data.mitems:
     x += (epsilon(float) * x + minimumPositiveValue(float) * 100) * r.gauss()
 
