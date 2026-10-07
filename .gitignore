@@ -5,3 +5,4 @@ dist/
 *.so
 *.pyd
 experiments/.scaleap/
+docs/explain/data/

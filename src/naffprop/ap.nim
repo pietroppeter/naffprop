@@ -149,14 +149,20 @@ proc finish*[T](s: MatrixView[T], conv: Convergence, it: int,
     else: result.dpsim += float(s[i, j])
   result.netsim = result.dpsim + result.expref
 
+type OnIteration*[T] = proc (it: int, r, a: Matrix[T], isEx: seq[bool]) {.closure.}
+  ## Called after each iteration `it` (from 0) with the responsibilities, the
+  ## availabilities and which points are exemplars (r(k, k) + a(k, k) > 0):
+  ## to record the messages, e.g. for the interactive explanation in docs/.
+
 proc affinityPropagation*[T](s: MatrixView[T], maxits = 1000, convits = 100,
-                             damping = 0.9): ApResult =
+                             damping = 0.9, onIteration: OnIteration[T] = nil): ApResult =
   ## Affinity propagation on the similarities `s`, whose diagonal holds the
   ## preferences. Stops when the exemplars have not changed for `convits`
   ## iterations, or after `maxits` iterations. Similarities must be finite:
   ## `prepare` turns -Inf (a pair never to link) into -maxFloat.
   ## The messages are stored in T (float32 halves the memory); the column
-  ## sums are accumulated in float64.
+  ## sums are accumulated in float64. `onIteration`, if given, sees the
+  ## messages after every iteration.
   let n = s.n
   let lam = T(damping)
   var
@@ -198,6 +204,7 @@ proc affinityPropagation*[T](s: MatrixView[T], maxits = 1000, convits = 100,
     # Exemplars: a(i, i) + r(i, i) > 0. Converged when no point changed its
     # status in the last convits iterations.
     for i in 0 ..< n: isEx[i] = a[i, i] + r[i, i] > 0
+    if onIteration != nil: onIteration(it, r, a, isEx)
     if conv.update(it, isEx, maxits): break
     inc it
 
