@@ -139,6 +139,30 @@ not offered: run through the numpy port of the MATLAB code, it changed the clust
 data sets, as soon as the similarities left its range of about 6.5e4 or n reached 1,000. The
 [readability notes](docs/readability.md) compare the Nim loop with the original, step by step.
 
+## Scaling to large n
+
+Three options go beyond the dense loop. They differ in what they keep exact and in what still
+grows with n^2:
+
+| | `scaleap=True` | sparse similarities | `leveraged` (`apcluster_l`) |
+|:--|:--|:--|:--|
+| result | the dense one | exact AP on the pairs kept | approximate: exemplars only among a sample |
+| similarities in memory | n x n | the pairs kept | n x (sample) |
+| messages in memory | the close pairs (a few %) | the pairs kept | n x (sample) |
+| time per iteration | reads n x n | the pairs kept | n x (sample), per sweep |
+| what you choose | nothing | which pairs, e.g. the k nearest neighbours | the sample fraction and the sweeps |
+| in the benchmark (blobs) | same clusters, 2-3x faster | same clusters with 10% neighbours, 7x faster at n = 8,000 | ARI 0.6-0.7, 2.6x faster |
+
+- **scaleap** is the safe choice whenever the n x n similarities fit in memory (as float32 with
+  `copy=False` they are the only n^2 cost).
+- **Sparse** scales furthest, but the neighbour graph is yours to build without an n x n matrix,
+  too few neighbours can split a cluster, and the default preference is the median of the pairs
+  kept: the close ones, so more clusters than with the dense median.
+- **Leveraged** needs only the data and a fraction of the points, so it works when nothing
+  n x n fits; the clustering depends on the sample.
+
+ScaleAP's pruning on sparse similarities would combine the first two ([roadmap](ROADMAP.md)).
+
 ## ScaleAP
 
 `scaleap=True` uses the pruning of ScaleAP (Shiokawa, [*Scalable affinity propagation for
@@ -160,8 +184,11 @@ The updates are Frey and Dueck's, as in the rest of naffprop, so it finds the sa
 is where it departs from the paper: the paper's equations, and its [C++ reference
 code](https://github.com/LazyShion/ScaleAP) (MIT), freeze the self-responsibility r(k, k) at
 s(k, k) - max s(k, j) and compute the availabilities from the previous iteration's
-responsibilities. On blobs, a numpy version of those equations found clusters with an adjusted
-Rand index of 0.7-0.8 against apcluster's. The time is still O(n^2) per iteration, since the
+responsibilities. Run on blobs with the same similarities and preference (no noise), the C++
+code found other clusters than naffprop (and apcluster): adjusted Rand index 0.64 at n = 300 and
+0.74 at n = 600 with damping 0.9, and almost every point its own cluster with damping 0.5, its
+default. It was also slower than the dense loop: 17 s and 223 s, against 0.10 s and 0.32 s,
+because its availability update takes O(n) per candidate pair. The time is still O(n^2) per iteration, since the
 best candidate of each point needs its whole row of similarities; the paper's O(n) counts the
 messages updated.
 
