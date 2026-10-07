@@ -25,6 +25,25 @@ a scalable version from the literature, with everything benchmarked.
   by AP into a hierarchy (dendrogram, `cutree`).
 - `details`: the net similarity at every iteration, to monitor convergence (R's `plot`).
 
+## Explained implementation
+
+An AI-driven implementation in a scientific context should also be explained and motivated, not
+only correct: documents that walk through what the code does and why each choice was made, so
+that a reader can understand it, check it and trust it. For naffprop, ideally interactive
+documents written in Nim with [nimib](https://github.com/pietroppeter/nimib), for example:
+
+- the message updates on a small example, with responsibilities and availabilities shown at
+  each iteration and the exemplars emerging;
+- why each choice: damping and R's defaults, the noise that breaks ties, the convergence test,
+  the refinement of the exemplars, the preference and its range, what differs from scikit-learn
+  and R and why;
+- the same for each new feature (sparse, leveraged, the scalable variant).
+
+Context:
+- Terence Tao, [If math is more than proof, we need to better celebrate the rest of it](https://terrytao.wordpress.com/2026/09/18/if-math-is-more-than-proof-we-need-to-better-celebrate-the-rest-of-it/)
+- Simon Willison, [answers](https://simonwillison.net/2026/Jan/11/answers/), on the value of
+  libraries mostly written by AI lying in how much they are used.
+
 ## Then: scalable affinity propagation
 
 - Shiokawa, [*Scalable affinity propagation for massive datasets*](https://ojs.aaai.org/index.php/AAAI/article/view/17160),
