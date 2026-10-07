@@ -108,6 +108,7 @@ pyproject.toml
 nimlang.lock                    # pinned commits of the Nim dependencies
 src/naffprop/matrix.nim         # a dense square matrix: all the linear algebra AP needs
 src/naffprop/ap.nim             # the algorithm and the preference range, plain Nim
+src/naffprop/rng.nim            # the seeded noise generator (or std/random)
 src/naffprop/core.nim           # nimpy exports, importable as naffprop.core
 src/naffprop/__init__.py        # R-style functions: argument checks, preferences, apcluster_k
 src/naffprop/_estimator.py      # the scikit-learn estimator
@@ -121,10 +122,11 @@ row maxima and column sums, so `matrix.nim` is a 20-line row-major `seq[float]`.
 on Arraymancer or BLAS, which keeps the door open to Nim's JS backend.
 [nimpy-numpy](https://github.com/pietroppeter/nimpy-numpy) passes numpy arrays to Nim.
 
-The tiny noise that breaks ties comes from a 20-line seeded generator in `ap.nim` (splitmix64
+The tiny noise that breaks ties comes from a 20-line seeded generator in `rng.nim` (splitmix64
 and Box-Muller), not from `std/random`, which does not cross-compile for macOS with nimlang yet
 (it links macOS's Security framework). It also makes a seed give the same clusters on every
-platform.
+platform. To build with `std/random` instead, set `NAFFPROP_STD_RANDOM=1` when building (it
+compiles with `-d:naffpropStdRandom`).
 
 Install it from PyPI:
 

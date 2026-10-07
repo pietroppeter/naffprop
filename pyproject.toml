@@ -33,4 +33,5 @@ cache-keys = [
     { file = "nimlang.lock" },
     { file = "src/**/*.nim" },
     { file = "src/**/*.nims" },
+    { env = "NAFFPROP_STD_RANDOM" },
 ]

@@ -67,7 +67,7 @@ Context:
 
 ## Packaging
 
-- Drop the seeded generator in `ap.nim` (splitmix64 and Box-Muller, used only for the
-  tie-breaking noise) for `std/random`, once nimlang cross-compiles `std/random` for macOS
+- Make `std/random` the default in `rng.nim` (today behind `-d:naffpropStdRandom`) and drop
+  the seeded generator (splitmix64 and Box-Muller, used only for the tie-breaking noise), once nimlang cross-compiles `std/random` for macOS
   (it imports `std/sysrand`, which links macOS's Security framework).
 - The JS backend (interactive visualizations): `ap.nim` and `matrix.nim` are plain Nim.
