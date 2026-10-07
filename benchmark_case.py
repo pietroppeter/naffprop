@@ -6,7 +6,13 @@ run on its own:
 
     uv run python benchmark_case.py naffprop 2000 0.9 1000 100
 
-Arguments: library (naffprop or sklearn), n, damping, max_iter, convergence_iter.
+Arguments: library, n, damping, max_iter, convergence_iter. The library is
+sklearn, or naffprop with its options: naffprop (float64), naffprop-f32
+(float32), naffprop-f32-inplace (float32 with copy=False: no copy of the
+similarity matrix), naffprop-sparse (the 10% nearest neighbours of each point
+only, as a scipy.sparse matrix), naffprop-leveraged (apcluster_l on 10% of the
+points, 5 sweeps: the n x n similarity matrix is never built, so its memory
+includes its similarities).
 """
 
 import json
@@ -19,14 +25,36 @@ from sklearn.datasets import make_blobs
 from sklearn.metrics import euclidean_distances
 
 
-def similarities(n):
-    """-||x_i - x_j||^2 for n blob points, computed by blocks of rows: no
-    n x n temporary inflates the peak memory before the fit."""
-    x, _ = make_blobs(n_samples=n, centers=10, cluster_std=1.0, random_state=0)
-    s = np.empty((n, n))
+def points(n):
+    return make_blobs(n_samples=n, centers=10, cluster_std=1.0, random_state=0)[0]
+
+
+def similarities(x, dtype=np.float64):
+    """-||x_i - x_j||^2, computed by blocks of rows: no n x n temporary
+    inflates the peak memory before the fit."""
+    n = len(x)
+    s = np.empty((n, n), dtype=dtype)
     for i in range(0, n, 100):
         s[i:i + 100] = -euclidean_distances(x[i:i + 100], x, squared=True)
     return s
+
+
+def nearest_neighbours(x, k):
+    """-||x_i - x_j||^2 for the k nearest neighbours j of each point i, as a
+    sparse matrix, computed by blocks of rows."""
+    from scipy.sparse import csr_array
+
+    n = len(x)
+    rows, cols, vals = [], [], []
+    for i in range(0, n, 100):
+        d = euclidean_distances(x[i:i + 100], x, squared=True)
+        d[np.arange(len(d)), np.arange(i, i + len(d))] = np.inf
+        nb = np.argpartition(d, k, axis=1)[:, :k]
+        rows.append(np.repeat(np.arange(i, i + len(d)), k))
+        cols.append(nb.ravel())
+        vals.append(-np.take_along_axis(d, nb, axis=1).ravel())
+    return csr_array((np.concatenate(vals), (np.concatenate(rows), np.concatenate(cols))),
+                     shape=(n, n))
 
 
 def max_rss():
@@ -37,30 +65,44 @@ def max_rss():
 
 
 def main(lib, n, damping, max_iter, conv):
-    s = similarities(n)
-    p = float(np.median(s[:100, 100:]))  # median of a sample: no n x n temporary
-    if lib == "naffprop":
+    x = points(n)
+    # The median of a sample of the similarities: no n x n temporary.
+    p = float(np.median(-euclidean_distances(x[:100], x[100:], squared=True)))
+    if lib == "naffprop-sparse":
+        s = nearest_neighbours(x, n // 10)
+    elif lib != "naffprop-leveraged":
+        s = similarities(x, np.float32 if "-f32" in lib else np.float64)
+    if lib in ("naffprop", "naffprop-f32", "naffprop-f32-inplace", "naffprop-sparse"):
         from naffprop import apcluster
 
         def fit():
-            res = apcluster(s, p=p, lam=damping, maxits=max_iter, convits=conv, seed=0)
-            return len(res.exemplars), res.iterations
+            res = apcluster(s, p=p, lam=damping, maxits=max_iter, convits=conv, seed=0,
+                            copy=not lib.endswith("-inplace"))
+            return res.labels, res.iterations
+    elif lib == "naffprop-leveraged":
+        from naffprop import apcluster_l
+
+        def fit():
+            res = apcluster_l(x, frac=0.1, sweeps=5, p=p, lam=damping, maxits=max_iter,
+                              convits=conv, seed=0)
+            return res.labels, res.iterations
     elif lib == "sklearn":
         from sklearn.cluster import affinity_propagation
 
         def fit():
-            centers, _, its = affinity_propagation(
+            _, labels, its = affinity_propagation(
                 s, preference=p, damping=damping, max_iter=max_iter,
                 convergence_iter=conv, random_state=0, return_n_iter=True)
-            return len(centers), its
+            return labels, its
     else:
         raise SystemExit(f"unknown library {lib!r}: naffprop or sklearn")
     before = max_rss()
     t = time.perf_counter()
-    k, its = fit()
+    labels, its = fit()
     t = time.perf_counter() - t
     mem = (max_rss() - before) / 2**20
-    print(json.dumps(dict(time=t, mem=mem, k=k, its=its)))
+    k = len(set(labels.tolist()) - {-1})
+    print(json.dumps(dict(time=t, mem=mem, k=k, its=its, labels=labels.tolist())))
 
 
 if __name__ == "__main__":

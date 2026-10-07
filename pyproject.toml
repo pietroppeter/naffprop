@@ -23,7 +23,7 @@ extensions = ["src/naffprop/core.nim"]
 [tool.nimlang]
 dependencies = [
     "nimpy",
-    "nimpy_numpy >= 0.1.0",
+    "nimpy_numpy#head",
 ]
 
 [tool.uv]

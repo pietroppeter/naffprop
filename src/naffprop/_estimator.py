@@ -3,6 +3,7 @@
 import warnings
 
 import numpy as np
+from scipy.sparse import issparse
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import euclidean_distances
@@ -27,6 +28,12 @@ class AffinityPropagation(ClusterMixin, BaseEstimator):
       (R's apclusterK).
     - If it does not converge, the clustering found is kept (with a
       ConvergenceWarning), as in R, instead of labelling every point -1.
+    - float32 input is kept in float32, similarities and messages included,
+      which halves the memory.
+    - affinity="precomputed" accepts a scipy.sparse similarity matrix: only
+      the pairs it stores are linked (R's apcluster on a sparse matrix).
+    - leveraged: leveraged affinity propagation (R's apclusterL), for large
+      data sets.
 
     Parameters
     ----------
@@ -35,7 +42,10 @@ class AffinityPropagation(ClusterMixin, BaseEstimator):
     convergence_iter : int, default 100
         Stop when the exemplars have not changed for that many iterations.
     copy : bool, default True
-        Kept for compatibility: the input is never modified.
+        If False, affinity propagation works in the similarity matrix itself
+        instead of a copy, which saves one n x n matrix: affinity_matrix_
+        (and X, with affinity="precomputed") then holds the noise and the
+        preferences on its diagonal.
     preference : float or array of shape (n_samples,), default None
         Larger preferences give more clusters. None: the quantile
         preference_quantile of the similarities.
@@ -46,7 +56,18 @@ class AffinityPropagation(ClusterMixin, BaseEstimator):
     affinity : {"euclidean", "precomputed"}, default "euclidean"
         "euclidean": negative squared Euclidean distance, as scikit-learn.
         "precomputed": a similarity matrix, where -Inf means never link
-        that pair (as in R).
+        that pair (as in R). It can be a scipy.sparse matrix: then the pairs
+        it does not store are never linked, and memory grows with the number
+        of pairs stored instead of n^2.
+    leveraged : float in (0, 1], default None
+        Leveraged affinity propagation (R's apclusterL, euclidean affinity
+        only): similarities of every point to a random sample of this fraction
+        of the points only, which are the possible exemplars. Memory and time
+        are about that fraction of a full run's. The n x n similarity matrix is
+        never built, and affinity_matrix_ is None.
+    sweeps : int, default 5
+        With leveraged: the number of samples tried; each keeps the exemplars
+        found so far. The clustering with the largest net similarity is kept.
     verbose : bool, default False
     random_state : int, RandomState instance or None, default None
         Seed of the tiny noise added to the similarities to break ties.
@@ -61,8 +82,8 @@ class AffinityPropagation(ClusterMixin, BaseEstimator):
 
     def __init__(self, *, damping=0.9, max_iter=1000, convergence_iter=100,
                  copy=True, preference=None, preference_quantile=None,
-                 n_clusters=None, affinity="euclidean", verbose=False,
-                 random_state=None):
+                 n_clusters=None, affinity="euclidean", leveraged=None, sweeps=5,
+                 verbose=False, random_state=None):
         self.damping = damping
         self.max_iter = max_iter
         self.convergence_iter = convergence_iter
@@ -71,6 +92,8 @@ class AffinityPropagation(ClusterMixin, BaseEstimator):
         self.preference_quantile = preference_quantile
         self.n_clusters = n_clusters
         self.affinity = affinity
+        self.leveraged = leveraged
+        self.sweeps = sweeps
         self.verbose = verbose
         self.random_state = random_state
 
@@ -85,24 +108,36 @@ class AffinityPropagation(ClusterMixin, BaseEstimator):
         if self.affinity not in ("euclidean", "precomputed"):
             raise ValueError(f"affinity must be 'euclidean' or 'precomputed', got {self.affinity!r}")
         precomputed = self.affinity == "precomputed"
+        if self.leveraged is not None and precomputed:
+            raise ValueError("leveraged needs affinity='euclidean'")
         # -Inf similarities are allowed: that pair is never linked.
-        X = validate_data(self, X, dtype=np.float64, copy=False,
-                          ensure_all_finite=not precomputed)
+        X = validate_data(self, X, dtype=[np.float64, np.float32], copy=False,
+                          ensure_all_finite=not precomputed,
+                          accept_sparse=["csr", "csc", "coo"] if precomputed else False)
+        sparse = precomputed and issparse(X)
         if precomputed:
             if X.shape[0] != X.shape[1]:
                 raise ValueError(f"precomputed affinity must be square, got {X.shape}")
-            if np.isnan(X).any() or np.isposinf(X).any():
+            values = X.data if sparse else X
+            if np.isnan(values).any() or np.isposinf(values).any():
                 raise ValueError("precomputed affinity must not contain NaN or +Inf")
             S = X
-        else:
+        elif self.leveraged is None:
             S = -euclidean_distances(X, squared=True)
+        else:
+            S = None
         self.affinity_matrix_ = S
-        n = S.shape[0]
+        n = X.shape[0]
         seed = check_random_state(self.random_state).randint(np.iinfo(np.int32).max)
         kwargs = dict(maxits=self.max_iter, convits=self.convergence_iter,
-                      lam=self.damping, seed=seed)
-        if n == 1:
-            res = naffprop.apcluster(S, p=0.0, **kwargs)
+                      lam=self.damping, seed=seed, dtype=X.dtype)
+        if (sparse or self.leveraged is not None) and self.n_clusters is not None:
+            raise ValueError("n_clusters is not supported with sparse similarities or leveraged")
+        if self.leveraged is not None and n > 1:
+            res = naffprop.apcluster_l(X, frac=self.leveraged, sweeps=self.sweeps,
+                                       p=self.preference, q=self.preference_quantile, **kwargs)
+        elif n == 1:
+            res = naffprop.apcluster(np.zeros((1, 1), X.dtype), p=0.0, **kwargs)
         elif self.n_clusters is not None:
             k = self.n_clusters
             if not 1 <= k <= n:
@@ -117,7 +152,8 @@ class AffinityPropagation(ClusterMixin, BaseEstimator):
             else:
                 res = naffprop.apcluster_k(S, k, prc=0, **kwargs)
         else:
-            res = naffprop.apcluster(S, p=self.preference, q=self.preference_quantile, **kwargs)
+            res = naffprop.apcluster(S, p=self.preference, q=self.preference_quantile,
+                                     copy=self.copy, **kwargs)
         if self.verbose:
             print(f"{len(res)} clusters after {res.iterations} iterations")
         if not res.converged:

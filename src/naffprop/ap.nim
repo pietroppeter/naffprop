@@ -13,7 +13,7 @@ import matrix, rng
 
 export matrix
 
-const maxFloat = maximumPositiveValue(float)
+template maxFloat(T): untyped = maximumPositiveValue(T)
 
 type
   ApResult* = object
@@ -26,53 +26,97 @@ type
     expref*: float        ## sum of the preferences of the exemplars
     netsim*: float        ## dpsim + expref, the objective AP maximizes
 
-proc addNoise*(s: var Matrix, seed: int64) =
+type Convergence* = object
+  ## Which points were exemplars in the last `convits` iterations (a ring
+  ## buffer) and how many times: converged when no point changed its status
+  ## in that window.
+  n, convits: int
+  hist: seq[uint8]
+  count: seq[int]
+  k*: int               ## exemplars in the last iteration
+  unconverged*: bool
+
+proc initConvergence*(n, convits: int): Convergence =
+  Convergence(n: n, convits: convits, hist: newSeq[uint8](n * convits),
+              count: newSeq[int](n))
+
+proc update*(c: var Convergence, it: int, isEx: openArray[bool], maxits: int): bool =
+  ## Records the exemplars of iteration `it` (from 0). True when it is time to
+  ## stop: converged with at least one exemplar, or `maxits` iterations.
+  c.unconverged = false
+  c.k = 0
+  let slot = it mod c.convits
+  for i in 0 ..< c.n:
+    let ex = uint8(isEx[i])
+    c.count[i] += ex.int - c.hist[i * c.convits + slot].int
+    c.hist[i * c.convits + slot] = ex
+    if c.count[i] > 0 and c.count[i] < c.convits: c.unconverged = true
+    c.k += ex.int
+  if it >= c.convits - 1 or it >= maxits - 1:
+    return (not c.unconverged and c.k > 0) or it >= maxits - 1
+
+proc toResult*(c: Convergence, it: int): ApResult =
+  ## The result after iteration `it`, before the exemplars are refined: all
+  ## labels -1 and NaN similarities if there are no exemplars.
+  result.iterations = it + 1
+  result.converged = not c.unconverged and c.k > 0
+  result.labels = newSeq[int](c.n)
+  if c.k == 0:
+    for l in result.labels.mitems: l = -1
+    result.dpsim = NaN
+    result.expref = NaN
+    result.netsim = NaN
+
+proc addNoise*[T](s: MatrixView[T], seed: int64) =
   ## Adds a tiny gaussian noise to every similarity, as R and scikit-learn do,
   ## so that ties (e.g. duplicated points) don't make the messages oscillate.
+  ## Its scale is the precision of T, so that float32 similarities get it too.
   var r = initRng(seed)
-  for x in s.data.mitems:
-    x += (epsilon(float) * x + minimumPositiveValue(float) * 100) * r.gauss()
+  for k in 0 ..< s.n * s.n:
+    let x = s.data[k]
+    s.data[k] = x + T((epsilon(T) * x + minimumPositiveValue(T) * 100) * r.gauss())
 
-proc setPreferences*(s: var Matrix, p: openArray[float]) =
+proc setPreferences*[T](s: MatrixView[T], p: openArray[float]) =
   ## Puts the preferences on the diagonal: one for every point, or the same
   ## for all if `p` has a single value.
   for i in 0 ..< s.n:
-    s[i, i] = if p.len == 1: p[0] else: p[i]
+    s[i, i] = T(if p.len == 1: p[0] else: p[i])
 
-proc prepare*(s: var Matrix, p: openArray[float], noise: bool, seed: int64) =
-  ## Readies a copy of the user's similarities for `affinityPropagation`:
-  ## noise, preferences on the diagonal, -Inf and NaN to -maxFloat (as R does).
+proc prepare*[T](s: MatrixView[T], p: openArray[float], noise: bool, seed: int64) =
+  ## Readies the similarities for `affinityPropagation`, in place: noise,
+  ## preferences on the diagonal, -Inf and NaN to -maxFloat (as R does).
   if noise: s.addNoise(seed)
   s.setPreferences(p)
-  for x in s.data.mitems:
-    if x.isNaN or x < -maxFloat: x = -maxFloat
+  for k in 0 ..< s.n * s.n:
+    let x = s.data[k]
+    if x.isNaN or x < -maxFloat(T): s.data[k] = -maxFloat(T)
 
 {.push checks: off.}  # hot loops: indices are in range by construction
 
-proc affinityPropagation*(s: Matrix, maxits = 1000, convits = 100,
-                          damping = 0.9): ApResult =
+proc affinityPropagation*[T](s: MatrixView[T], maxits = 1000, convits = 100,
+                             damping = 0.9): ApResult =
   ## Affinity propagation on the similarities `s`, whose diagonal holds the
   ## preferences. Stops when the exemplars have not changed for `convits`
   ## iterations, or after `maxits` iterations. Similarities must be finite:
   ## `prepare` turns -Inf (a pair never to link) into -maxFloat.
+  ## The messages are stored in T (float32 halves the memory); the column
+  ## sums are accumulated in float64.
   let n = s.n
-  let lam = damping
+  let lam = T(damping)
   var
-    r = zeros(n)                           # responsibilities
-    a = zeros(n)                           # availabilities
+    r = zeros[T](n)                        # responsibilities
+    a = zeros[T](n)                        # availabilities
     colsum = newSeq[float](n)
-    hist = newSeq[uint8](n * convits)      # was i an exemplar, last convits its
-    count = newSeq[int](n)                 # ... and how many times
+    conv = initConvergence(n, convits)
+    isEx = newSeq[bool](n)
     it = 0
-    k = 0
-    unconverged = false
   while true:
     # Responsibilities, by row: r(i, j) = s(i, j) - max over j' != j of
     # (a(i, j') + s(i, j')). On the way, the column sums of the positive
     # responsibilities (and the diagonal) that the availabilities need.
     for j in 0 ..< n: colsum[j] = 0
     for i in 0 ..< n:
-      var max1, max2 = -Inf
+      var max1, max2 = T(-Inf)
       var jmax = 0
       for j in 0 ..< n:
         let v = a[i, j] + s[i, j]
@@ -85,51 +129,34 @@ proc affinityPropagation*(s: Matrix, maxits = 1000, convits = 100,
       for j in 0 ..< n:
         let v = (1 - lam) * (s[i, j] - (if j == jmax: max2 else: max1)) +
                 lam * r[i, j]
-        r[i, j] = min(v, maxFloat)
+        r[i, j] = min(v, maxFloat(T))
         if r[i, j] > 0 or i == j: colsum[j] += r[i, j]
     # Availabilities: a(i, j) = min(0, r(j, j) + sum of the positive r(i', j)
     # for i' not in {i, j}), and a(j, j) = sum of the positive r(i', j), i' != j.
     for i in 0 ..< n:
       for j in 0 ..< n:
         let v = r[i, j]
-        var x = colsum[j] - (if v > 0 or i == j: v else: 0.0)
+        var x = colsum[j] - (if v > 0 or i == j: float(v) else: 0.0)
         if x > 0 and i != j: x = 0
-        a[i, j] = (1 - lam) * x + lam * a[i, j]
+        a[i, j] = (1 - lam) * T(x) + lam * a[i, j]
     # Exemplars: a(i, i) + r(i, i) > 0. Converged when no point changed its
     # status in the last convits iterations.
-    unconverged = false
-    k = 0
-    let slot = it mod convits
-    for i in 0 ..< n:
-      let ex = uint8(a[i, i] + r[i, i] > 0)
-      count[i] += ex.int - hist[i * convits + slot].int
-      hist[i * convits + slot] = ex
-      if count[i] > 0 and count[i] < convits: unconverged = true
-      k += ex.int
-    if it >= convits - 1 or it >= maxits - 1:
-      if (not unconverged and k > 0) or it >= maxits - 1:
-        break
+    for i in 0 ..< n: isEx[i] = a[i, i] + r[i, i] > 0
+    if conv.update(it, isEx, maxits): break
     inc it
 
-  result.iterations = it + 1
-  result.converged = not unconverged and k > 0
-  result.labels = newSeq[int](n)
-  if k == 0:
-    for l in result.labels.mitems: l = -1
-    result.dpsim = NaN
-    result.expref = NaN
-    result.netsim = NaN
-    return
-
+  result = conv.toResult(it)
+  if conv.k == 0: return
+  let k = conv.k
   var ex = newSeqOfCap[int](k)
   for i in 0 ..< n:
-    if a[i, i] + r[i, i] > 0: ex.add i
+    if isEx[i]: ex.add i
 
-  proc assign(s: Matrix, ex: seq[int], c: var seq[int]) =
+  proc assign(s: MatrixView[T], ex: seq[int], c: var seq[int]) =
     ## Each point to its most similar exemplar (the first on ties), each
     ## exemplar to itself.
     for i in 0 ..< s.n:
-      var best = -Inf
+      var best = T(-Inf)
       c[i] = 0
       for e, j in ex:
         if s[i, j] > best:
@@ -147,14 +174,14 @@ proc affinityPropagation*(s: Matrix, maxits = 1000, convits = 100,
     var best = -Inf
     for j in members[e]:
       var t = 0.0
-      for i in members[e]: t += s[i, j]
+      for i in members[e]: t += float(s[i, j])
       if t > best:
         best = t
         ex[e] = j
   assign(s, ex, c)
 
   # Exemplars in increasing order, labels pointing into them.
-  var isEx = newSeq[bool](n)
+  for j in 0 ..< n: isEx[j] = false
   for j in ex: isEx[j] = true
   var pos = newSeq[int](n)
   for j in 0 ..< n:
@@ -164,18 +191,18 @@ proc affinityPropagation*(s: Matrix, maxits = 1000, convits = 100,
   for i in 0 ..< n:
     let j = ex[c[i]]
     result.labels[i] = pos[j]
-    if i == j: result.expref += s[i, i]
-    else: result.dpsim += s[i, j]
+    if i == j: result.expref += float(s[i, i])
+    else: result.dpsim += float(s[i, j])
   result.netsim = result.dpsim + result.expref
 
-proc preferenceRange*(s: Matrix, exact = false): (float, float) =
+proc preferenceRange*[T](s: MatrixView[T], exact = false): (float, float) =
   ## The preferences between which AP finds from 1 or 2 clusters (the lower
   ## bound) to n clusters (the upper bound), ignoring the diagonal of `s`.
   ## The lower bound is exact with `exact = true` (O(n^3)), otherwise it is a
   ## cheaper, smaller bound (O(n^2)), as in Frey and Dueck's preferenceRange.m.
   ## -Inf similarities are skipped in the sums.
   let n = s.n
-  template sim(i, j: int): float = (if i == j: 0.0 else: s[i, j])
+  template sim(i, j: int): float = (if i == j: 0.0 else: float(s[i, j]))
   template addFinite(acc: var float, v: float) =
     if v > -Inf:
       acc = (if acc == -Inf: v else: acc + v)
@@ -185,7 +212,7 @@ proc preferenceRange*(s: Matrix, exact = false): (float, float) =
     var t = -Inf
     for i in 0 ..< n:
       t.addFinite sim(i, j)
-      if i != j and s[i, j] > pmax: pmax = s[i, j]
+      if i != j and s[i, j] > pmax: pmax = float(s[i, j])
     if t > dpsim1: dpsim1 = t
   var pmin: float
   if dpsim1 == -Inf:
@@ -207,7 +234,7 @@ proc preferenceRange*(s: Matrix, exact = false): (float, float) =
     for i in 0 ..< n:
       var m = -Inf
       for j in 0 ..< n:
-        if j != i and s[i, j] > m: m = s[i, j]
+        if j != i and s[i, j] > m: m = float(s[i, j])
       if m > -Inf:
         total.addFinite m
         if m < m1:

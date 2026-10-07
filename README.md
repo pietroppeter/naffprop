@@ -14,18 +14,23 @@ ap.labels_, ap.cluster_centers_indices_
 
 AffinityPropagation(preference_quantile=0.1)   # fewer clusters: R's q
 AffinityPropagation(n_clusters=5)              # exactly 5 clusters: R's apclusterK
-AffinityPropagation(affinity="precomputed").fit(S)   # your own similarity matrix
+AffinityPropagation(affinity="precomputed").fit(S)   # your own similarity matrix, dense or sparse
+AffinityPropagation(leveraged=0.1).fit(X)      # large n: R's apclusterL on 10% of the points
+AffinityPropagation().fit(X.astype("float32")) # half the memory
 ```
 
 The same features are also available as functions named after R's:
 
 ```python
-from naffprop import apcluster, apcluster_k, neg_dist_mat, preference_range
+from naffprop import apcluster, apcluster_k, apcluster_l, neg_dist_mat, preference_range
 
 S = neg_dist_mat(X, r=2)        # -||x_i - x_j||^2, as R's negDistMat
 res = apcluster(S, q=0.5)       # APResult: exemplars, labels, clusters, netsim, iterations, converged
 res = apcluster_k(S, 5)
 pmin, pmax = preference_range(S)
+res = apcluster(S_sparse)       # a scipy.sparse matrix: only the stored pairs are linked
+res = apcluster_l(X, frac=0.1, sweeps=5)   # leveraged, as R's apclusterL
+res = apcluster(S, dtype="float32", copy=False)   # least memory: float32, no copy of S
 ```
 
 ## Compared with scikit-learn and R
@@ -45,8 +50,10 @@ tests). The differences are in what is offered around it:
 | preference range | no | `preferenceRange` | `preference_range` |
 | not converged | warns, labels all -1 | warns, keeps the clusters | R's |
 | -Inf similarities (never link a pair) | no | yes | yes |
-| sparse similarities | no | yes | [roadmap](ROADMAP.md) |
-| leveraged AP (large n) | no | `apclusterL` | [roadmap](ROADMAP.md) |
+| sparse similarities | no | yes | scipy.sparse, with `affinity="precomputed"` or `apcluster` |
+| leveraged AP (large n) | no | `apclusterL` | `leveraged`, `apcluster_l` |
+| float32 (half the memory) | no | no | `dtype`, float32 input |
+| work in the similarity matrix, no copy | `copy=False` | no | `copy=False` |
 | exemplar-based agglomerative clustering | no | `aggExCluster` | [roadmap](ROADMAP.md) |
 
 scikit-learn's defaults often stop before convergence. In the benchmark below, at 2,000 and 4,000
@@ -101,6 +108,13 @@ naffprop needs three n x n matrices (a copy of the similarities, the responsibil
 availabilities), as R does. scikit-learn needs four or five. When both converge they find the
 same clusters. When they don't, each stops at a different point, because each draws its own noise.
 
+With `dtype=np.float32` (or float32 input) the three matrices take half the memory, and with
+`copy=False` the similarities are not copied, so two are left: in the benchmark below, about a
+quarter of the extra memory scikit-learn needs. On the test data float32 finds the same exemplars as float64. float16 is
+not offered: run through the numpy port of the MATLAB code, it changed the clusters on 2 of 6
+data sets, as soon as the similarities left its range of about 6.5e4 or n reached 1,000. The
+[readability notes](docs/readability.md) compare the Nim loop with the original, step by step.
+
 ## How it is built
 
 ```
@@ -108,6 +122,8 @@ pyproject.toml
 nimlang.lock                    # pinned commits of the Nim dependencies
 src/naffprop/matrix.nim         # a dense square matrix: all the linear algebra AP needs
 src/naffprop/ap.nim             # the algorithm and the preference range, plain Nim
+src/naffprop/sparse.nim         # the algorithm on the stored pairs of a sparse matrix
+src/naffprop/leveraged.nim      # leveraged AP: the similarities to a sample of the points
 src/naffprop/rng.nim            # the seeded noise generator (or std/random)
 src/naffprop/core.nim           # nimpy exports, importable as naffprop.core
 src/naffprop/__init__.py        # R-style functions: argument checks, preferences, apcluster_k
