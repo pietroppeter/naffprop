@@ -93,6 +93,62 @@ proc prepare*[T](s: MatrixView[T], p: openArray[float], noise: bool, seed: int64
 
 {.push checks: off.}  # hot loops: indices are in range by construction
 
+proc finish*[T](s: MatrixView[T], conv: Convergence, it: int,
+                isEx: var seq[bool]): ApResult =
+  ## The result once the messages have converged, with `isEx` the exemplars
+  ## of the last iteration: each point to its most similar exemplar, then the
+  ## exemplars refined and the points assigned again, as apcluster.m does.
+  result = conv.toResult(it)
+  if conv.k == 0: return
+  let n = s.n
+  let k = conv.k
+  var ex = newSeqOfCap[int](k)
+  for i in 0 ..< n:
+    if isEx[i]: ex.add i
+
+  proc assign(s: MatrixView[T], ex: seq[int], c: var seq[int]) =
+    ## Each point to its most similar exemplar (the first on ties), each
+    ## exemplar to itself.
+    for i in 0 ..< s.n:
+      var best = T(-Inf)
+      c[i] = 0
+      for e, j in ex:
+        if s[i, j] > best:
+          best = s[i, j]
+          c[i] = e
+    for e, j in ex: c[j] = e
+
+  var c = newSeq[int](n)
+  assign(s, ex, c)
+  # Refinement: in each cluster, the exemplar becomes the member with the
+  # largest sum of similarities from the other members (and its preference).
+  var members = newSeq[seq[int]](k)
+  for i in 0 ..< n: members[c[i]].add i
+  for e in 0 ..< k:
+    var best = -Inf
+    for j in members[e]:
+      var t = 0.0
+      for i in members[e]: t += float(s[i, j])
+      if t > best:
+        best = t
+        ex[e] = j
+  assign(s, ex, c)
+
+  # Exemplars in increasing order, labels pointing into them.
+  for j in 0 ..< n: isEx[j] = false
+  for j in ex: isEx[j] = true
+  var pos = newSeq[int](n)
+  for j in 0 ..< n:
+    if isEx[j]:
+      pos[j] = result.exemplars.len
+      result.exemplars.add j
+  for i in 0 ..< n:
+    let j = ex[c[i]]
+    result.labels[i] = pos[j]
+    if i == j: result.expref += float(s[i, i])
+    else: result.dpsim += float(s[i, j])
+  result.netsim = result.dpsim + result.expref
+
 proc affinityPropagation*[T](s: MatrixView[T], maxits = 1000, convits = 100,
                              damping = 0.9): ApResult =
   ## Affinity propagation on the similarities `s`, whose diagonal holds the
@@ -145,55 +201,7 @@ proc affinityPropagation*[T](s: MatrixView[T], maxits = 1000, convits = 100,
     if conv.update(it, isEx, maxits): break
     inc it
 
-  result = conv.toResult(it)
-  if conv.k == 0: return
-  let k = conv.k
-  var ex = newSeqOfCap[int](k)
-  for i in 0 ..< n:
-    if isEx[i]: ex.add i
-
-  proc assign(s: MatrixView[T], ex: seq[int], c: var seq[int]) =
-    ## Each point to its most similar exemplar (the first on ties), each
-    ## exemplar to itself.
-    for i in 0 ..< s.n:
-      var best = T(-Inf)
-      c[i] = 0
-      for e, j in ex:
-        if s[i, j] > best:
-          best = s[i, j]
-          c[i] = e
-    for e, j in ex: c[j] = e
-
-  var c = newSeq[int](n)
-  assign(s, ex, c)
-  # Refinement: in each cluster, the exemplar becomes the member with the
-  # largest sum of similarities from the other members (and its preference).
-  var members = newSeq[seq[int]](k)
-  for i in 0 ..< n: members[c[i]].add i
-  for e in 0 ..< k:
-    var best = -Inf
-    for j in members[e]:
-      var t = 0.0
-      for i in members[e]: t += float(s[i, j])
-      if t > best:
-        best = t
-        ex[e] = j
-  assign(s, ex, c)
-
-  # Exemplars in increasing order, labels pointing into them.
-  for j in 0 ..< n: isEx[j] = false
-  for j in ex: isEx[j] = true
-  var pos = newSeq[int](n)
-  for j in 0 ..< n:
-    if isEx[j]:
-      pos[j] = result.exemplars.len
-      result.exemplars.add j
-  for i in 0 ..< n:
-    let j = ex[c[i]]
-    result.labels[i] = pos[j]
-    if i == j: result.expref += float(s[i, i])
-    else: result.dpsim += float(s[i, j])
-  result.netsim = result.dpsim + result.expref
+  result = finish(s, conv, it, isEx)
 
 proc preferenceRange*[T](s: MatrixView[T], exact = false): (float, float) =
   ## The preferences between which AP finds from 1 or 2 clusters (the lower

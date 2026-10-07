@@ -67,9 +67,11 @@ def _similarities(s, dtype=None, copy=False, square=True):
 
 
 def _off_diagonal(s):
-    """The finite similarities off the diagonal, as R uses to choose p."""
-    v = s[~np.eye(len(s), dtype=bool)]
-    return v[v > -np.inf]
+    """The finite similarities off the diagonal, as R uses to choose p, in a
+    single copy (the n - 1 elements after each diagonal one)."""
+    n = len(s)
+    v = s.reshape(-1)[1:].reshape(n - 1, n + 1)[:, :n].ravel() if n > 1 else s[:0, 0]
+    return v[v > -np.inf] if np.isneginf(v).any() else v
 
 
 def _seed(seed):
@@ -124,9 +126,14 @@ def _check_params(lam, maxits, convits, q):
 
 def _preferences(p, q, similarities, n):
     """p as one value per point: if None, the quantile q (default: the median)
-    of `similarities` (the finite ones off the diagonal)."""
+    of `similarities` (the finite ones off the diagonal), or of the copy that
+    `similarities()` returns, which is then sorted in place."""
     if p is None:
-        p = np.quantile(similarities, 0.5 if q is None else q) if len(similarities) else 0.0
+        own = callable(similarities)
+        if own:
+            similarities = similarities()
+        p = (np.quantile(similarities, 0.5 if q is None else q, overwrite_input=own)
+             if len(similarities) else 0.0)
     p = np.asarray(p, dtype=np.float64).reshape(-1)
     if len(p) not in (1, n):
         raise ValueError(f"p must be one value or one per point ({n}), got {len(p)}")
@@ -151,7 +158,7 @@ def _result(out, p, sel=None):
 
 
 def apcluster(s, p=None, q=None, maxits=1000, convits=100, lam=0.9,
-              nonoise=False, seed=None, dtype=None, copy=True):
+              nonoise=False, seed=None, dtype=None, copy=True, scaleap=False):
     """Affinity propagation on the similarity matrix `s`, as R's apcluster.
 
     s: a square array, or a scipy.sparse matrix: then messages are passed only
@@ -171,14 +178,19 @@ def apcluster(s, p=None, q=None, maxits=1000, convits=100, lam=0.9,
     copy: if False, and s is a C-contiguous array of that dtype, work in s
        itself instead of a copy (saves one n x n matrix): s then holds the
        noise and the preferences on its diagonal.
+    scaleap: use ScaleAP's pruning (Shiokawa, AAAI 2021): the same clusters,
+       but only the messages of close pairs are stored, so it needs about a
+       third of the memory, and it is faster. Dense s only.
     """
     _check_params(lam, maxits, convits, q)
     if _issparse(s):
+        if scaleap:
+            raise ValueError("scaleap needs a dense similarity matrix")
         return _apcluster_sparse(s, p, q, maxits, convits, lam, nonoise, seed, dtype)
     s = _similarities(s, dtype, copy)
-    p = _preferences(p, q, _off_diagonal(s), len(s))
+    p = _preferences(p, q, lambda: _off_diagonal(s), len(s))
     return _result(_core.apcluster(s, p.tolist(), int(maxits), int(convits), float(lam),
-                                   not nonoise, _seed(seed)), p)
+                                   not nonoise, _seed(seed), bool(scaleap)), p)
 
 
 def _issparse(s):
@@ -284,11 +296,12 @@ def apcluster_l(x, frac, sweeps, s=None, p=None, q=None, maxits=1000,
 
 
 def apcluster_k(s, k, prc=10, bimaxit=20, exact=False, maxits=1000,
-                convits=100, lam=0.9, nonoise=False, seed=None, dtype=None):
+                convits=100, lam=0.9, nonoise=False, seed=None, dtype=None,
+                scaleap=False):
     """Affinity propagation with (about) `k` clusters, as R's apclusterK: a
     bisection on the preference, within preference_range(s), that stops when
     the number of clusters is within `prc` percent of k, or after `bimaxit`
-    steps (use prc=0 to ask for exactly k)."""
+    steps (use prc=0 to ask for exactly k). scaleap: as in apcluster."""
     s = _similarities(s, dtype)
     n = len(s)
     if not 2 <= k < n:
@@ -302,7 +315,7 @@ def apcluster_k(s, k, prc=10, bimaxit=20, exact=False, maxits=1000,
 
     def run(p):
         return apcluster(s, p, maxits=maxits, convits=convits, lam=lam,
-                         nonoise=nonoise, seed=seed)
+                         nonoise=nonoise, seed=seed, scaleap=scaleap)
 
     def off(res):
         return abs(len(res) - k) * 100 / k

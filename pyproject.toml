@@ -1,6 +1,6 @@
 [project]
 name = "naffprop"
-version = "0.2.0"
+version = "0.3.0"
 description = "Affinity propagation in Nim for Python: R's apcluster features behind a scikit-learn API."
 readme = "README.md"
 license = "MIT"

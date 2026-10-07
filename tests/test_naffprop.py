@@ -320,3 +320,56 @@ def test_leveraged_finds_the_blobs(dtype):
                               random_state=1).fit(x.astype(dtype))
     assert adjusted_rand_score(est.labels_, y) > 0.95
     assert est.predict(x[:5]).shape == (5,)
+
+
+# ScaleAP's pruning: the same messages, most of them not stored
+
+
+@pytest.mark.parametrize("data", ["normal", "blobs"])
+@pytest.mark.parametrize("q", [0.1, 0.5, 0.9])
+def test_scaleap_matches_reference(data, q):
+    x = rng.normal(size=(80, 2)) if data == "normal" else blobs(100)
+    s = neg_dist_mat(x, 2)
+    res = apcluster(s, q=q, nonoise=True, scaleap=True)
+    ex, labels, its = reference_apcluster(s, res.p[0])
+    np.testing.assert_array_equal(res.exemplars, ex)
+    np.testing.assert_array_equal(res.labels, labels)
+    assert res.iterations == its
+    assert res.netsim == pytest.approx(apcluster(s, q=q, nonoise=True).netsim)
+
+
+def test_scaleap_damping_and_per_point_preference():
+    x = blobs(90, centers=4, seed=3)
+    s = neg_dist_mat(x, 1)
+    p = rng.uniform(-8, -1, size=len(s))
+    res = apcluster(s, p=p, lam=0.6, convits=20, nonoise=True, scaleap=True)
+    ex, labels, its = reference_apcluster(s, p, convits=20, lam=0.6)
+    np.testing.assert_array_equal(res.exemplars, ex)
+    np.testing.assert_array_equal(res.labels, labels)
+    assert res.iterations == its
+
+
+@pytest.mark.parametrize("dtype", [np.float64, np.float32])
+def test_scaleap_same_as_dense(dtype):
+    x = blobs(400, centers=8, seed=4)
+    s = neg_dist_mat(x, 2)
+    s[rng.random(s.shape) < 0.2] = -np.inf  # pairs never linked
+    dense = apcluster(s, seed=1, dtype=dtype)
+    pruned = apcluster(s, seed=1, dtype=dtype, scaleap=True)
+    np.testing.assert_array_equal(pruned.exemplars, dense.exemplars)
+    np.testing.assert_array_equal(pruned.labels, dense.labels)
+    assert pruned.iterations == dense.iterations
+    assert apcluster_k(s, 5, prc=0, seed=1, scaleap=True).labels.max() == 4
+
+
+def test_scaleap_estimator():
+    from sklearn.utils.estimator_checks import check_estimator
+
+    x = blobs(150)
+    np.testing.assert_array_equal(AffinityPropagation(scaleap=True, random_state=0).fit(x).labels_,
+                                  AffinityPropagation(random_state=0).fit(x).labels_)
+    check_estimator(AffinityPropagation(scaleap=True, random_state=0))
+    with pytest.raises(ValueError):
+        AffinityPropagation(scaleap=True, leveraged=0.5).fit(x)
+    with pytest.raises(ValueError):
+        apcluster(scipy.sparse.csr_array(neg_dist_mat(x, 2)), scaleap=True)
