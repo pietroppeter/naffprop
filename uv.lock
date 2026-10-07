@@ -122,7 +122,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "nimlang", specifier = ">=0.0.2" },
+    { name = "nimlang", specifier = ">=0.0.3" },
     { name = "pytest" },
 ]
 
@@ -137,19 +137,19 @@ wheels = [
 
 [[package]]
 name = "nimlang"
-version = "0.0.2"
+version = "0.0.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "tomlkit" },
     { name = "ziglang" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/11/03/1ebe71ee95abacd3216361ee07fcefb93fa10848c803862a68167f637b4b/nimlang-0.0.2.tar.gz", hash = "sha256:589b719a74429387bf6ad2c2488fffb1c00f7e45a208480405f0c8072fb8d145", size = 36255, upload-time = "2026-10-06T10:40:37.51Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5a/32/3ca3e2bc70a537e87fb5e83a4f77251175f9316ac2d2e4cb0bbee8813104/nimlang-0.0.3.tar.gz", hash = "sha256:b4a64f92ff7cdc47c88da3c4c523c86aff327b97072f35a0592fab857d1d7ade", size = 38992, upload-time = "2026-10-07T01:31:37.195Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/eb/a7/bbfcb6092f7861b862566cc8458c8690f93a8971e51fffe40c21fc0e0d24/nimlang-0.0.2-py3-none-macosx_10_13_x86_64.whl", hash = "sha256:a19b241f603ee2e68f937f69cfd1b591d6abd5c1de5b59147ef8d475eba58239", size = 4780737, upload-time = "2026-10-06T10:40:27.708Z" },
-    { url = "https://files.pythonhosted.org/packages/fa/86/9415bfc170760e9968bad9e1687d83e0be43f6f6e61e3fd0f583d20ca28c/nimlang-0.0.2-py3-none-macosx_11_0_arm64.whl", hash = "sha256:8e5a3644dc6718a4bcb09bcb15875b5a25614e42fdbb3ff0414da09ab9060da3", size = 4511244, upload-time = "2026-10-06T10:40:29.553Z" },
-    { url = "https://files.pythonhosted.org/packages/d9/21/ef0a96db60c3dc52a3d45850ec9e2b81a46451bf2fe5901c98b648e7aeb0/nimlang-0.0.2-py3-none-manylinux_2_17_aarch64.whl", hash = "sha256:fddd99b8d6df508e2553c9e27bb015f1b10804e425dd173017321c93ade9a183", size = 16091596, upload-time = "2026-10-06T10:40:31.473Z" },
-    { url = "https://files.pythonhosted.org/packages/29/be/8acc323220f3e828c37a5fb8d6977759e4ea2446f85c1da6fad3fcc6d429/nimlang-0.0.2-py3-none-manylinux_2_17_x86_64.whl", hash = "sha256:b21998cbb712577844f6e48ec4d0c8e141e399fd7aeb5eb181fcfc7b97c6223a", size = 7414004, upload-time = "2026-10-06T10:40:33.962Z" },
-    { url = "https://files.pythonhosted.org/packages/49/1e/9af93d58a13729dc6dd03e03ffd4ab8ebd430c48cac75386538b94ab9b95/nimlang-0.0.2-py3-none-win_amd64.whl", hash = "sha256:bf73bdca6cf98f860cc78f79a2ba71fa34d43d2e977c5e1cfc08c9d803fcba71", size = 13594129, upload-time = "2026-10-06T10:40:35.707Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/ac/6474fa088dc65c04318af251dcea1a3afa627c3e427820bbbb481d8c0da0/nimlang-0.0.3-py3-none-macosx_10_13_x86_64.whl", hash = "sha256:1f967774fe711b821067ca59501797be7d44c6fca9f13822cc0cd840fc358e38", size = 4781907, upload-time = "2026-10-07T01:31:25.065Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/b9/4473c6c6bc3fc534dfd7729fade6e7da3c6dc4924f7843026e3bbc948fb8/nimlang-0.0.3-py3-none-macosx_11_0_arm64.whl", hash = "sha256:9c03ea6ba728135e32046632eb96f30b9001a9624e76f9dc83f526a550bb74b8", size = 4512414, upload-time = "2026-10-07T01:31:27.549Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/81/610390d649e869c2ca673ace3744e3591beb6060ca490bed8595080e8728/nimlang-0.0.3-py3-none-manylinux_2_17_aarch64.whl", hash = "sha256:af242cb200fa428033b79acf49bc7921fd7d149b8c9ebfae85784efa7da36437", size = 16092767, upload-time = "2026-10-07T01:31:29.776Z" },
+    { url = "https://files.pythonhosted.org/packages/c8/a5/c3f4b34cee777d688be40ae9a665a8e3c1d024b5a1488c2cae4c607b3e7e/nimlang-0.0.3-py3-none-manylinux_2_17_x86_64.whl", hash = "sha256:56468e7785a69b8d51fd48af3f60cd6bccf2c6be43aee3d9720b0fcc60840552", size = 7415174, upload-time = "2026-10-07T01:31:32.315Z" },
+    { url = "https://files.pythonhosted.org/packages/44/90/e7d8b3aef773d9d31507008714cde8197400a56221296c04de27a411dce8/nimlang-0.0.3-py3-none-win_amd64.whl", hash = "sha256:79f5f114c9cb8ae6a854aa1eff5785d3ee543b69e2dba1593b119f7f808238aa", size = 13595299, upload-time = "2026-10-07T01:31:34.443Z" },
 ]
 
 [[package]]

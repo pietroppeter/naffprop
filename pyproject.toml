@@ -11,10 +11,10 @@ dependencies = ["numpy", "scikit-learn>=1.6"]
 Repository = "https://github.com/pietroppeter/naffprop"
 
 [dependency-groups]
-dev = ["nimlang>=0.0.2", "pytest"]
+dev = ["nimlang>=0.0.3", "pytest"]
 
 [build-system]
-requires = ["hatchling", "nimlang>=0.0.2"]
+requires = ["hatchling", "nimlang>=0.0.3"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.hooks.nimlang]
