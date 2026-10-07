@@ -1,1 +1,6 @@
-x_*
+__pycache__/
+.venv/
+dist/
+.nimlang/
+*.so
+*.pyd
