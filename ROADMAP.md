@@ -51,6 +51,7 @@ Context:
 - Shiokawa, [*Scalable affinity propagation for massive datasets*](https://ojs.aaai.org/index.php/AAAI/article/view/17160),
   AAAI 2021: from O(n^2 T) to O(n T) time (T iterations). The similarities still take O(n^2)
   memory, so it pairs well with sparse similarities.
+  Reference implementation in C++ (MIT): [LazyShion/ScaleAP](https://github.com/LazyShion/ScaleAP).
 
 ## Performance
 
