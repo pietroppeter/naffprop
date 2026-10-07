@@ -121,6 +121,11 @@ row maxima and column sums, so `matrix.nim` is a 20-line row-major `seq[float]`.
 on Arraymancer or BLAS, which keeps the door open to Nim's JS backend.
 [nimpy-numpy](https://github.com/pietroppeter/nimpy-numpy) passes numpy arrays to Nim.
 
+The tiny noise that breaks ties comes from a 20-line seeded generator in `ap.nim` (splitmix64
+and Box-Muller), not from `std/random`, which does not cross-compile for macOS with nimlang yet
+(it links macOS's Security framework). It also makes a seed give the same clusters on every
+platform.
+
 Install it from PyPI:
 
 ```sh
