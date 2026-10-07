@@ -193,6 +193,7 @@ The source code naffprop was compared with, to check what changed since:
 | | version compared | source |
 |:--|:--|:--|
 | R apcluster | 1.4.14 (2025-09-09) | [GitHub mirror of CRAN](https://github.com/cran/apcluster): [`apcluster`](https://github.com/cran/apcluster/blob/master/R/apcluster-methods.R) and its [C++ loop](https://github.com/cran/apcluster/blob/master/src/apclusterC.cpp), [`apclusterK`](https://github.com/cran/apcluster/blob/master/R/apclusterK-methods.R), [`preferenceRange`](https://github.com/cran/apcluster/blob/master/R/preferenceRange-methods.R) and its [C++](https://github.com/cran/apcluster/blob/master/src/preferenceRangeC.cpp), [NEWS](https://github.com/cran/apcluster/blob/master/inst/NEWS) |
+| Frey and Dueck's MATLAB code | `apcluster.m` (2006) | `http://www.psi.toronto.edu/affinitypropagation/apcluster.m`, no longer online. Its license: "This software may be freely used and distributed for non-commercial purposes", so it is not included here. [`tests/reference.py`](tests/reference.py) is naffprop's own numpy version of the same steps. |
 | scikit-learn | 1.9.1 | [`sklearn/cluster/_affinity_propagation.py`](https://github.com/scikit-learn/scikit-learn/blob/main/sklearn/cluster/_affinity_propagation.py) |
 
 The project started during an [Open Source Saturday](https://www.meetup.com/it-IT/Open-Source-Saturday-Milano/)
