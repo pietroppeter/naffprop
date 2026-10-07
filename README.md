@@ -126,7 +126,8 @@ For large n, with R's defaults: sparse similarities (the 10% nearest neighbours 
 
 Sparse finds the same clustering. Leveraged finds about as many clusters, but cuts the blobs
 differently: the median preference gives 37 to 55 clusters for 10 blobs, so where a blob is
-split depends on which points are sampled.
+split depends on which points are sampled. Its net similarity, the objective AP maximizes, is only 1.5-2.5%
+lower than the full run's ([experiments](experiments/README.md)).
 
 naffprop needs three n x n matrices (a copy of the similarities, the responsibilities and the
 availabilities), as R does. scikit-learn needs four or five. When both converge they find the
@@ -151,7 +152,7 @@ grows with n^2:
 | messages in memory | the close pairs (a few %) | the pairs kept | n x (sample) |
 | time per iteration | reads n x n | the pairs kept | n x (sample), per sweep |
 | what you choose | nothing | which pairs, e.g. the k nearest neighbours | the sample fraction and the sweeps |
-| in the benchmark (blobs) | same clusters, 2-3x faster | same clusters with 10% neighbours, 7x faster at n = 8,000 | ARI 0.6-0.7, 2.6x faster |
+| in the benchmark (blobs) | same clusters, 2-3x faster | same clusters with 10% neighbours, 7x faster at n = 8,000 | net similarity 1.5-2.5% lower, 2.6x faster |
 
 - **scaleap** is the safe choice whenever the n x n similarities fit in memory (as float32 with
   `copy=False` they are the only n^2 cost).
@@ -185,12 +186,13 @@ is where it departs from the paper: the paper's equations, and its [C++ referenc
 code](https://github.com/LazyShion/ScaleAP) (MIT), freeze the self-responsibility r(k, k) at
 s(k, k) - max s(k, j) and compute the availabilities from the previous iteration's
 responsibilities. Run on blobs with the same similarities and preference (no noise), the C++
-code found other clusters than naffprop (and apcluster): adjusted Rand index 0.64 at n = 300 and
-0.74 at n = 600 with damping 0.9, and almost every point its own cluster with damping 0.5, its
-default. It was also slower than the dense loop: 17 s and 223 s, against 0.10 s and 0.32 s,
-because its availability update takes O(n) per candidate pair. The time is still O(n^2) per iteration, since the
-best candidate of each point needs its whole row of similarities; the paper's O(n) counts the
-messages updated.
+code reached a 5% lower net similarity (the objective AP maximizes) with damping 0.9. With
+damping 0.5, its default, it did not converge, and almost every point was its own cluster. It
+was also slower than the dense loop by two to three orders of magnitude (154 s against 0.27 s
+at n = 600), because its availability update takes O(n) per candidate pair. The
+[experiments](experiments/README.md) reproduce these numbers. The time is still O(n^2) per
+iteration, since the best candidate of each point needs its whole row of similarities; the
+paper's O(n) counts the messages updated.
 
 `benchmark.py` compares it with the dense loop, with R's defaults, on the cloud container above
 (naffprop 0.2.0 plus this change). Time (s) and extra peak memory (MiB): with float32 and
@@ -223,6 +225,7 @@ src/naffprop/_estimator.py      # the scikit-learn estimator
 tests/reference.py              # numpy port of Frey and Dueck's MATLAB code
 benchmark.py                    # naffprop vs scikit-learn (a uv script: deps in its header)
 benchmark_case.py               # one case in its own process: time and peak memory
+experiments/                    # scripts behind design decisions, with their results
 ```
 
 Affinity propagation needs no linear algebra library. Its messages are elementwise updates plus

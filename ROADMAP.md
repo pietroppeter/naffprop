@@ -27,6 +27,13 @@ a scalable version from the literature, with everything benchmarked.
   by AP into a hierarchy (dendrogram, `cutree`).
 - `details`: the net similarity at every iteration, to monitor convergence (R's `plot`).
 - `apcluster_k` and `preference_range` on sparse similarities.
+- Research how to build sparse similarities without an n x n matrix. R offers only
+  `as.SparseSimilarityMatrix(s, lower=)`, which thresholds a dense matrix. Options to compare:
+  a threshold (keep the pairs similar enough to end up in the same cluster) or the k nearest
+  neighbours; computed by blocks of rows (O(n^2) time, memory only for the pairs kept), or with
+  algorithms that avoid looking at all n^2 pairs (k-d and ball trees for radius and
+  nearest-neighbour queries in few dimensions, approximate nearest neighbours in many, as in
+  scikit-learn's `radius_neighbors_graph` and `kneighbors_graph`). Then a helper in naffprop.
 
 ## Explained implementation
 
