@@ -57,8 +57,9 @@ points they hit the 200-iteration limit, while R's defaults converge.
 ## Benchmark
 
 `uv run benchmark.py` runs naffprop and `sklearn.cluster.affinity_propagation` on the same
-similarity matrix (blobs, 10 centers) with the same preference and parameters. Each case runs in
-its own process, which measures how much memory the fit needs on top of that matrix. One run on
+similarity matrix (blobs, 10 centers) with the same preference and parameters. Each case runs
+`benchmark_case.py` in its own process, which measures how much memory the fit needs on top of
+that matrix (Unix only). One run on
 a 4-core Linux container (the timings are noisy from run to run):
 
 | n | parameters | naffprop (s) | scikit-learn (s) | speedup | naffprop memory (MiB) | scikit-learn memory (MiB) | clusters | iterations |
@@ -88,6 +89,7 @@ src/naffprop/__init__.py        # R-style functions: argument checks, preference
 src/naffprop/_estimator.py      # the scikit-learn estimator
 tests/reference.py              # numpy port of Frey and Dueck's MATLAB code
 benchmark.py                    # naffprop vs scikit-learn (a uv script: deps in its header)
+benchmark_case.py               # one case in its own process: time and peak memory
 ```
 
 Affinity propagation needs no linear algebra library. Its messages are elementwise updates plus

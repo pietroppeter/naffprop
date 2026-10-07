@@ -11,49 +11,20 @@ needs on top of that matrix.
 
     uv run benchmark.py
 
-Every case runs in its own process, so the peak memory (max RSS) of one does
-not hide the next one.
+Every case runs benchmark_case.py in its own process, so the peak memory
+(max RSS) of one does not hide the next one. Unix only (ru_maxrss).
 """
 
 import json
 import subprocess
 import sys
+from pathlib import Path
 
-CASE = r"""
-import json, resource, sys, time
-import numpy as np
-from sklearn.datasets import make_blobs
-from sklearn.metrics import euclidean_distances
-
-lib, n, damping, max_iter, conv = sys.argv[1], int(sys.argv[2]), float(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5])
-x, _ = make_blobs(n_samples=n, centers=10, cluster_std=1.0, random_state=0)
-s = np.empty((n, n))
-for i in range(0, n, 100):  # by blocks, so that no n x n temporary inflates the baseline
-    s[i:i + 100] = -euclidean_distances(x[i:i + 100], x, squared=True)
-p = float(np.median(s[:100, 100:]))  # median of a sample: no n x n temporary
-if lib == "naffprop":
-    from naffprop import apcluster
-    fit = lambda: apcluster(s, p=p, lam=damping, maxits=max_iter, convits=conv, seed=0)
-else:
-    from sklearn.cluster import affinity_propagation
-    fit = lambda: affinity_propagation(s, preference=p, damping=damping, max_iter=max_iter,
-                                       convergence_iter=conv, random_state=0, return_n_iter=True)
-scale = 1024 if sys.platform != "darwin" else 1  # ru_maxrss: KiB on Linux, bytes on macOS
-before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * scale
-t = time.perf_counter()
-res = fit()
-t = time.perf_counter() - t
-after = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * scale
-if lib == "naffprop":
-    k, its = len(res.exemplars), res.iterations
-else:
-    k, its = len(res[0]), res[2]
-print(json.dumps(dict(time=t, mem=(after - before) / 2**20, k=k, its=its)))
-"""
+CASE = Path(__file__).with_name("benchmark_case.py")
 
 
 def run(lib, n, damping, max_iter, conv):
-    out = subprocess.run([sys.executable, "-c", CASE, lib, str(n), str(damping), str(max_iter), str(conv)],
+    out = subprocess.run([sys.executable, CASE, lib, str(n), str(damping), str(max_iter), str(conv)],
                          check=True, capture_output=True, text=True).stdout
     return json.loads(out.strip().splitlines()[-1])
 
