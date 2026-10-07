@@ -63,7 +63,24 @@ that matrix (Unix only). It first prints the machine it runs on: paste that with
 you share a run. Timings depend on the machine and are noisy from run to run; naffprop has been
 1.0-2.6x faster than scikit-learn so far, and needed a third to three quarters of its extra memory.
 
-One run on a cloud container:
+On an Apple M3 Pro laptop:
+
+- CPU: Apple M3 Pro, 11 cores, 18 GiB RAM
+- OS: macOS 15.7.3 (arm64)
+- Python 3.13.0, naffprop 0.1.0, numpy 2.5.3, scikit-learn 1.9.1
+
+| n | parameters | naffprop (s) | scikit-learn (s) | speedup | naffprop memory (MiB) | scikit-learn memory (MiB) | clusters | iterations |
+|--:|:-----------|---------:|-------------:|--------:|----------------:|--------------------:|---------:|-----------:|
+| 500 | sklearn defaults | 0.04 | 0.05 | 1.1x | 5 | 12 | 13 / 13 | 54 / 54 |
+| 500 | R defaults | 0.10 | 0.12 | 1.3x | 5 | 12 | 10 / 10 | 134 / 134 |
+| 1,000 | sklearn defaults | 0.43 | 0.56 | 1.3x | 25 | 46 | 19 / 21 | 153 / 168 |
+| 1,000 | R defaults | 0.58 | 0.67 | 1.2x | 25 | 46 | 16 / 16 | 206 / 206 |
+| 2,000 | sklearn defaults | 2.19 | 2.69 | 1.2x | 102 | 250 | 45 / 105 | 200 / 200 |
+| 2,000 | R defaults | 1.63 | 2.02 | 1.2x | 102 | 251 | 27 / 27 | 147 / 147 |
+| 4,000 | sklearn defaults | 8.44 | 11.30 | 1.3x | 411 | 1006 | 1387 / 1404 | 200 / 200 |
+| 4,000 | R defaults | 7.28 | 9.67 | 1.3x | 411 | 1009 | 37 / 37 | 168 / 168 |
+
+On a cloud container:
 
 - CPU: Intel(R) Xeon(R) Processor @ 2.80GHz, 4 cores, 16 GiB RAM
 - OS: Linux (x86_64)
