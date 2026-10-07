@@ -1,6 +1,6 @@
 [project]
 name = "naffprop"
-version = "0.1.0"
+version = "0.2.0"
 description = "Affinity propagation in Nim for Python: R's apcluster features behind a scikit-learn API."
 readme = "README.md"
 license = "MIT"
@@ -23,7 +23,7 @@ extensions = ["src/naffprop/core.nim"]
 [tool.nimlang]
 dependencies = [
     "nimpy",
-    "nimpy_numpy#head",
+    "nimpy_numpy >= 0.2.0",
 ]
 
 [tool.uv]
