@@ -21,8 +21,8 @@ written as JSON, which the pages embed and read.
 - `test_explain.nim`: `nim c -r docs/explain/test_explain.nim`, and after `gen_data`, for
   the JS side, `nim js -d:nodejs -r docs/explain/test_explain.nim`.
 
-- `toy25.nim`: the paper's 25 points (recovered, the paper's ToyProblemData.txt is no longer
-  online).
+- `toy25.nim`: the paper's 25 points, an approximate reconstruction digitized from its
+  figure (the paper's ToyProblemData.txt is no longer online).
 
 The data: the paper's 25 points, similarity the negative squared distance, preference the median similarity,
 damping 0.9 and convits 10 (`fig1Parameters`: the exemplars emerge over more iterations

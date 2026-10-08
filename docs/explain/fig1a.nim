@@ -58,7 +58,8 @@ nbFile("../../src/naffprop/ap.nim")
 
 nbText: """
 **The data.** The types of the explanation (points, parameters, the messages at every
-iteration) and the run behind the figure: the paper's 25 points (`toy25.nim`),
+iteration) and the run behind the figure: the paper's 25 points as reconstructed from its
+figure (`toy25.nim`),
 similarities -‖xᵢ − xₖ‖², and AP with the hook recording every iteration. It runs beforehand, in C; the page reads the
 result as JSON.
 """
