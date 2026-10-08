@@ -1,6 +1,7 @@
 # Interactive explanation of affinity propagation (work in progress)
 
-The goal: the explanation of the original paper (Frey and Dueck, Science 2007, Fig. 1)
+The goal: the explanation of the original paper (Frey and Dueck, Science 2007, Fig. 1,
+[pdf](https://people.csail.mit.edu/kjhsiao/Frey2007.pdf))
 made interactive, written in Nim with [nimib](https://github.com/pietroppeter/nimib) and
 Karax. Everything the pages show is computed beforehand by naffprop's own `ap.nim` and
 written as JSON, which the pages embed and read.

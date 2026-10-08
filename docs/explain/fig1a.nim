@@ -25,7 +25,8 @@ nb.backend.partials["nbFile"] = detailsFilePartial
 nbHeader("How exemplars emerge", eyebrow = "naffprop · explaining affinity propagation")
 
 nbText: """
-Affinity propagation ([Frey and Dueck, *Science* 2007](https://doi.org/10.1126/science.1136800)) lets every point exchange two
+Affinity propagation (Frey and Dueck, [*Science* 2007](https://doi.org/10.1126/science.1136800),
+[pdf](https://people.csail.mit.edu/kjhsiao/Frey2007.pdf)) lets every point exchange two
 kinds of messages with every other point until a few of them stand out as **exemplars**.
 This is the paper's Fig. 1A, one iteration at a time: press Play, step with the arrows
 (or the arrow keys), or drag the slider.
