@@ -24,8 +24,8 @@ newNbBlock(NbHeader):
   repo: string
   toHtml:
     "<header class=\"nb-header\">" &
-      (if blk.repo.len > 0: "<a class=\"repo\" href=\"https://github.com/" & blk.repo &
-        "\" title=\"source on GitHub\">" & githubLogo & "<span>" & blk.repo & "</span></a>" else: "") &
+      (if blk.repo.len > 0: "<p class=\"repo\"><a href=\"https://github.com/" & blk.repo &
+        "\" title=\"source on GitHub\">" & githubLogo & "<span>" & blk.repo & "</span></a></p>" else: "") &
       "<p class=\"eyebrow\">" & blk.eyebrow & "</p>" &
       "<h1>" & blk.title & "</h1></header>"
 
