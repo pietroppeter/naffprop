@@ -63,10 +63,8 @@ iteration) and the run behind the figure: the paper's own 25 points (`toy25.nim`
 similarities -‖xᵢ − xₖ‖², and AP with the hook recording every iteration. It runs beforehand, in C; the page reads the
 result as JSON.
 
-The points are the authors' ToyProblemData.txt. Their page is no longer online, but a
-copy survives in [jincheng9/AffinityPropagation](https://github.com/jincheng9/AffinityPropagation/tree/ad82f68)
-(commit ad82f68). Mapped onto the paper's Fig. 1A, every point falls within 4 pixels of
-the one drawn there, and AP finds the paper's exemplars.
+The points are the authors' ToyProblemData.txt, from
+[jincheng9/AffinityPropagation](https://github.com/jincheng9/AffinityPropagation/tree/ad82f68).
 """
 nbFile("explain.nim")
 nbFile("toy25.nim")

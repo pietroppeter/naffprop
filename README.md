@@ -3,6 +3,8 @@
 [Affinity propagation] clustering written in [Nim] for Python. It aims to be the best of R's
 [apcluster] behind scikit-learn's API, and it is built with
 [nimlang](https://github.com/pietroppeter/uv-add-nimlang).
+How it works, interactively: [How exemplars emerge](https://pietroppeter.github.io/naffprop/),
+the paper's Fig. 1 one iteration at a time.
 
 > AI disclosure: this project is mostly vibed. Currently [level 7](https://www.visidata.org/blog/2026/ai/#level-6%3A-bots-coded%2C-human-understands-mostly) on visidata AI scale: Human specced, bots coded.
 

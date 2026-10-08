@@ -1,5 +1,7 @@
 # Interactive explanation of affinity propagation (work in progress)
 
+Published at <https://pietroppeter.github.io/naffprop/>.
+
 The goal: the explanation of the original paper (Frey and Dueck, Science 2007, Fig. 1,
 [pdf](https://people.csail.mit.edu/kjhsiao/Frey2007.pdf))
 made interactive, written in Nim with [nimib](https://github.com/pietroppeter/nimib) and
@@ -9,6 +11,8 @@ written as JSON, which the pages embed and read.
 - `explain.nim`: the types (`Point`, `Ap2DInput`, `ApParameters`, `ApIterations`,
   `ApRun`, plus naffprop's `ApResult`) and how the data is made. The types also compile to
   JS, so a page parses the JSON with std/json's `to`.
+- `toy25.nim`: the paper's 25 points, the authors' ToyProblemData.txt, from
+  [jincheng9/AffinityPropagation](https://github.com/jincheng9/AffinityPropagation/tree/ad82f68).
 - `gen_data.nim`: writes `data/toy25.json` (not committed, about 270 KB):
   `nim c -r docs/explain/gen_data.nim`.
 - `animation.nim`: the Fig. 1A animation, a Karax app (JS), and its figure and legend
@@ -22,13 +26,7 @@ written as JSON, which the pages embed and read.
 - `test_explain.nim`: `nim c -r docs/explain/test_explain.nim`, and after `gen_data`, for
   the JS side, `nim js -d:nodejs -r docs/explain/test_explain.nim`.
 
-- `toy25.nim`: the paper's 25 points, the authors' ToyProblemData.txt. Their page is
-  offline; the file was recovered from a mirror,
-  [jincheng9/AffinityPropagation](https://github.com/jincheng9/AffinityPropagation/tree/ad82f68)
-  (commit ad82f68), and checked by mapping it onto the paper's Fig. 1A (every point within
-  4 px). AP finds the paper's exemplars, 2, 6 and 19.
-
-The data: the paper's 25 points, similarity the negative squared distance, preference the median similarity,
-damping 0.9 and convits 10 (`fig1Parameters`: the exemplars emerge over more iterations
-than with the paper's damping 0.5), no noise. The messages are rounded to 4 significant
-digits.
+The data: the paper's 25 points, similarity the negative squared distance, preference the
+median similarity, damping 0.9 and convits 10 (`fig1Parameters`: the exemplars emerge over
+more iterations than with the paper's damping 0.5), no noise. The messages are rounded to 4
+significant digits.
