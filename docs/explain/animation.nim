@@ -14,7 +14,7 @@ import std/[math, strutils]
 import explain
 when defined(js):
   include karax/prelude
-  import karax/kdom
+  import karax/[kdom, vstyles]
   {.warning[CStringConv]: off.}  # attribute values are cstrings in JS
 
 func f(x: float): string = formatFloat(x, ffDecimal, 2)
@@ -57,11 +57,6 @@ func evidenceColor*(e, lo, hi: float): string =
     let i = min(int(x), viridis.high - 1)
     mix(viridis[i], viridis[i + 1], x - float(i))
 
-type Extreme = object
-  ## The lowest or highest evidence of a run, and where it is reached.
-  e: float
-  k, t: int
-
 func evidence(r, a: Matrix[float], k: int): float = r[k, k] + a[k, k]
 
 func beliefs*(r, a: Matrix[float], i: int, temperature: float): seq[float] =
@@ -93,7 +88,7 @@ func legendHtml*(params: ApParameters): string =
     "exemplar (it is one when positive)</span>" &
     "<span>" & arrow & "</span><span>i → k: i's belief that k is its exemplar</span>" &
     "</div>\n" &
-    "<p class=\"params\"><span>preference " & pref & "</span> · <span>damping λ = " &
+    "<p class=\"params\"><strong>parameters</strong> <span>preference " & pref & "</span> · <span>damping λ = " &
     $params.damping & "</span> · <span>convits " & $params.convits &
     "</span> · <span>maxits " & $params.maxits & "</span></p>"
 
@@ -113,16 +108,16 @@ when defined(js):
     let rad = 0.02 * px
     # the evidence scale is the range of the whole run, so a color means the
     # same at every iteration
-    var lo = Extreme(e: Inf)
-    var hi = Extreme(e: -Inf)
+    var lo = Inf
+    var hi = -Inf
     for t in 1 .. last:
       for k in 0 ..< n:
         let e = evidence(run.iterations.r[t - 1], run.iterations.a[t - 1], k)
-        if e < lo.e: lo = Extreme(e: e, k: k, t: t)
-        if e > hi.e: hi = Extreme(e: e, k: k, t: t)
+        lo = min(lo, e)
+        hi = max(hi, e)
     # keep 0 strictly inside the scale, even for a run with no exemplar
-    lo.e = min(lo.e, -1e-9)
-    hi.e = max(hi.e, 1e-9)
+    lo = min(lo, -1e-9)
+    hi = max(hi, 1e-9)
     # for how many iterations, up to t, each point has been an exemplar: points
     # become opaque as they settle, over `convits` iterations
     var streak = newSeq[seq[int]](last + 1)
@@ -189,7 +184,7 @@ when defined(js):
           # before any message there is no evidence yet: a neutral point.
           # Points are see-through until they become exemplars, then turn
           # opaque as they stay exemplars (settled after `convits` iterations)
-          let color = if t == 0: "var(--muted)" else: evidenceColor(e, lo.e, hi.e)
+          let color = if t == 0: "var(--muted)" else: evidenceColor(e, lo, hi)
           let opacity = 0.35 + 0.65 * min(streak[t][k] / settle, 1.0)
           circle(cx = f(sx(fr, pts[k].x)), cy = f(sy(fr, pts[k].y)),
                  r = f(if isEx: 1.5 * rad else: rad),
@@ -199,17 +194,13 @@ when defined(js):
                         formatFloat(e, ffDecimal, 3)
 
     proc colorBar(): VNode =
-      ## The evidence scale, lowest to highest of the run, with 0 in the middle
-      ## (each side has its own scale) and a tick for every point now. The bar
-      ## stretches to the figure's width; its labels are HTML, so they keep
-      ## their size.
+      ## The evidence scale, linear from the lowest to the highest of the run,
+      ## with 0 marked and a tick for every point now. The bar stretches to the
+      ## figure's width; its labels are HTML, so they keep their size.
       let r = if t == 0: zero else: run.iterations.r[t - 1]
       let a = if t == 0: zero else: run.iterations.a[t - 1]
-      const (w, h, mid, steps) = (1000.0, 24.0, 500.0, 60)
-      proc bx(e: float): float =
-        if e <= 0: mid * (1 - clamp(e / lo.e, 0.0, 1.0))
-        else: mid + mid * clamp(e / hi.e, 0.0, 1.0)
-      proc where(x: Extreme): string = "point " & $x.k & ", iteration " & $x.t
+      const (w, h, steps) = (1000.0, 24.0, 60)
+      proc bx(e: float): float = w * (e - lo) / (hi - lo)
       result = buildHtml(tdiv(class = "ap-scale")):
         tdiv(class = "ap-scale-row"):
           span: text "← not an exemplar"
@@ -218,23 +209,17 @@ when defined(js):
             class = "ap-bar", role = "img", `aria-label` = "Evidence color scale"):
           for j in 0 ..< steps:
             # one rect per step, colored at its middle
-            let half = steps div 2
-            let e = if j < half: lo.e * (1 - (j.float + 0.5) / half.float)
-                    else: hi.e * ((j - half).float + 0.5) / half.float
+            let e = lo + (hi - lo) * (j.float + 0.5) / steps.float
             rect(x = f(j.float * w / steps.float), y = "6", width = f(w / steps.float + 1),
-                 height = "12", fill = evidenceColor(e, lo.e, hi.e))
-          for x in [0.5, mid, w - 0.5]:
+                 height = "12", fill = evidenceColor(e, lo, hi))
+          for x in [0.5, bx(0), w - 0.5]:
             line(x1 = f(x), y1 = "0", x2 = f(x), y2 = f(h), class = "ap-mark")
           if t > 0:
             for k in 0 ..< n:
               let x = bx(evidence(r, a, k))
               line(x1 = f(x), y1 = "2", x2 = f(x), y2 = "22", class = "ap-tick")
-        tdiv(class = "ap-scale-row"):
-          span(title = "lowest evidence of the run: " & where(lo)):
-            text "min " & formatFloat(lo.e, ffDecimal, 2)
-          span: text "0"
-          span(title = "highest evidence of the run: " & where(hi)):
-            text "max " & formatFloat(hi.e, ffDecimal, 2)
+        tdiv(class = "ap-scale-zero"):
+          span(style = style(StyleAttr.left, f(100 * bx(0) / w) & "%")): text "0"
 
     proc createDom(): VNode =
       let exemplars = if t == 0: newSeq[int]() else: run.iterations.exemplars[t - 1]

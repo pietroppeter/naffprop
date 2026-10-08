@@ -22,7 +22,8 @@ func detailsFilePartial(blk: JsonNode, nb: Nb): string =
 
 nb.backend.partials["nbFile"] = detailsFilePartial
 
-nbHeader("How exemplars emerge", eyebrow = "naffprop · explaining affinity propagation")
+nbHeader("How exemplars emerge", eyebrow = "naffprop · explaining affinity propagation",
+  repo = "pietroppeter/naffprop")
 
 nbText: """
 Affinity propagation (Frey and Dueck, [*Science* 2007](https://doi.org/10.1126/science.1136800),
@@ -78,8 +79,8 @@ nbFile("animation.nim")
 
 nbText: """
 **The page.** The theme plugs our stylesheet into nimib, with no highlight.js, and adds
-`nbHeader`, the title with the line above it; the stylesheet has the colors for light
-and dark.
+`nbHeader`, the title with the line above it and a link to the repository; the
+stylesheet has the colors for light and dark.
 """
 nbFile("theme.nim")
 nbFile("style.css")
