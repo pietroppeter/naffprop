@@ -4,7 +4,7 @@
 import std/[json, strutils, xmltree]
 import nimib
 import nimib/[highlight, renders]
-import theme, explain, animation
+import theme, data, animation
 
 nbInit
 nb.useExplainTheme()
@@ -47,9 +47,9 @@ let run = parseJson(readFile("data/toy25.json")).to(ApRun)
 nbRawHtml figureHtml(apRoot, run.params)
 nbJsFromCodeOwnFile(apRoot):
   import std/json
-  import explain, animation
-  const data = staticRead("data/toy25.json")
-  mountAnimation(apRoot, parseJson(data).to(ApRun))
+  import data, animation
+  const runJson = staticRead("data/toy25.json")
+  mountAnimation(apRoot, parseJson(runJson).to(ApRun))
   enableArrowKeys()
 
 nbText: """
@@ -74,7 +74,7 @@ result as JSON.
 The points are the authors' ToyProblemData.txt, from
 [jincheng9/AffinityPropagation](https://github.com/jincheng9/AffinityPropagation/tree/ad82f68).
 """
-nbFile("explain.nim")
+nbFile("data.nim")
 nbFile("toy25.nim")
 
 nbText: """

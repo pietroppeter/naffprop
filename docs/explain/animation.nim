@@ -11,7 +11,7 @@
 ## so the page decides them, for both themes.
 
 import std/[math, strutils]
-import explain
+import data
 when defined(js):
   include karax/prelude
   import karax/[kdom, vstyles]
