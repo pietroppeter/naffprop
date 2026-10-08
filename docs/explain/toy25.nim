@@ -1,16 +1,21 @@
 ## The paper's 25 points (Frey and Dueck 2007, Fig. 1): the toy data set the
-## explanation runs on. An approximate reconstruction, digitized from the
-## paper's figure (the original ToyProblemData.txt is no longer online). In the
-## paper, AP picks points 2, 6 and 19 (from 0) as exemplars.
+## explanation runs on. These are the original ToyProblemData.txt values from
+## the authors' AP web page (psi.toronto.edu, now offline), as mirrored in
+## https://github.com/jincheng9/AffinityPropagation (commit ad82f68, 2014).
+## An affine fit onto the paper's Fig. 1A lands every point within 4 px.
+## With negative squared distances and the median preference, AP picks points
+## 2, 6 and 19 (from 0) as exemplars, as in the paper.
 
 import explain
 
 const toy25Points* = [
-  (0.25, 9.027), (2.05, 9.784), (2.85, 7.730), (1.45, 8.108), (0.15, 7.081),
-  (1.50, 6.541), (7.55, 7.676), (6.25, 8.865), (6.90, 9.351), (8.15, 9.081),
-  (3.25, 6.054), (9.20, 8.486), (1.85, 8.811), (8.90, 7.351), (8.10, 6.703),
-  (3.20, 3.892), (4.40, 4.108), (5.65, 3.946), (5.95, 2.432), (4.85, 2.649),
-  (4.90, 1.784), (3.30, 8.919), (6.15, 1.135), (3.40, 1.568), (9.35, 6.811)]
+  (-2.341500, 3.696800), (-1.109200, 3.111700), (-1.566900, 1.835100), (-2.658500, 0.664900),
+  (-4.031700, 2.845700), (-3.081000, 2.101100), (2.588000, 1.781900), (3.292300, 3.058500),
+  (4.031700, 1.622300), (3.081000, -0.611700), (0.264100, 0.398900), (1.320400, 2.207400),
+  (0.193700, 3.643600), (1.954200, -0.505300), (1.637300, 1.409600), (-0.123200, -1.516000),
+  (-1.355600, -3.058500), (0.017600, -4.016000), (1.003500, -3.590400), (0.017600, -2.420200),
+  (-1.531700, -0.930900), (-1.144400, 0.505300), (0.616200, -1.516000), (1.707700, -2.207400),
+  (2.095100, 3.430900)]
 
 const paperExemplars* = [2, 6, 19]
 
