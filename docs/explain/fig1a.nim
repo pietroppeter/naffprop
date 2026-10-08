@@ -22,7 +22,7 @@ func detailsFilePartial(blk: JsonNode, nb: Nb): string =
 
 nb.backend.partials["nbFile"] = detailsFilePartial
 
-nbHeader("How exemplars emerge", eyebrow = "naffprop · explaining affinity propagation",
+nbHeader("How exemplars emerge", eyebrow = "explaining affinity propagation",
   repo = "pietroppeter/naffprop")
 
 nbText: """
@@ -55,7 +55,7 @@ nbJsFromCodeOwnFile(apRoot):
 nbText: """
 ## The code
 
-From the algorithm to the page. The source of this page itself is under *Show Source*
+From the algorithm to an interactive explanation. The source of this page itself is under *Show Source*
 at the bottom.
 
 **The algorithm.** naffprop's own affinity propagation, the code that runs when you
