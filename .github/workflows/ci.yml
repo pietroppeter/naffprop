@@ -81,6 +81,22 @@ jobs:
           uv pip install --python sdist-env --no-binary naffprop dist/*.tar.gz pytest
           sdist-env/bin/python -m pytest -v -p no:cacheprovider tests
 
+  # The Nim package (naffprop.nimble) on its own: `import naffprop` with the C and JS backends.
+  nim:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Nim (nimlang)
+        run: |
+          uv venv nim-env
+          uv pip install --python nim-env nimlang
+          echo "$PWD/nim-env/bin" >> "$GITHUB_PATH"
+      - name: Tests (C)
+        run: nim c -r --hints:off --path:src tests/test_nim.nim
+      - name: Tests (JS)
+        run: nim js -d:nodejs -r --hints:off --path:src tests/test_nim.nim
+
   # The interactive explanation (docs/explain): data, tests and pages, built on every
   # push; published to GitHub Pages from main.
   docs:

@@ -1,6 +1,6 @@
 # naffprop
 
-[Affinity propagation] clustering written in [Nim] for Python. It aims to be the best of R's
+[Affinity propagation] clustering written in [Nim] for Python (and [for Nim](#in-nim)). It aims to be the best of R's
 [apcluster] behind scikit-learn's API, and it is built with
 [nimlang](https://github.com/pietroppeter/uv-add-nimlang).
 How it works, interactively: [How exemplars emerge](https://pietroppeter.github.io/naffprop/),
@@ -36,6 +36,32 @@ res = apcluster_l(X, frac=0.1, sweeps=5)   # leveraged, as R's apclusterL
 res = apcluster(S, dtype="float32", copy=False)   # least memory: float32, no copy of S
 res = apcluster(S, scaleap=True)                  # ScaleAP's pruning: the same result
 ```
+
+## In Nim
+
+The algorithm is plain Nim with no dependency, and it is also a Nim package
+(`naffprop.nimble`), for the C and JS backends:
+
+```sh
+nimble install https://github.com/pietroppeter/naffprop
+```
+
+```nim
+import naffprop   # or one module: naffprop/ap, naffprop/sparse, naffprop/scaleap, naffprop/leveraged
+
+var s = zeros[float](n)          # similarities, e.g. s[i, j] = -||x_i - x_j||^2
+let v = s.view                   # the algorithm works on a view, in place
+let (pmin, pmax) = preferenceRange(v)
+v.prepare([pmin], noise = true, seed = 0)   # preferences on the diagonal, tie-breaking noise
+let res = v.affinityPropagation()           # R's defaults: damping 0.9, convits 100, maxits 1000
+echo res.exemplars, " ", res.labels, " ", res.netsim
+```
+
+This is the core of the Python package, without its conveniences (the `q` quantile, `apcluster_k`,
+the estimator). Leveraged AP is C only. The Python wheels are compiled with
+`--passC:-ffp-contract=off`, so that results are the same on every platform (see `core.nims`);
+pass it too to get the same clusters as from Python. Its first users: the
+[interactive explanation](docs/explain) and color palettes from images (appalette).
 
 ## Compared with scikit-learn and R
 
@@ -214,7 +240,9 @@ disagree there), it can end on different exemplars than the dense loop.
 
 ```
 pyproject.toml
+naffprop.nimble                 # the Nim package: the .nim files, same version as pyproject.toml
 nimlang.lock                    # pinned commits of the Nim dependencies
+src/naffprop.nim                # `import naffprop`: the Nim modules below but core.nim
 src/naffprop/matrix.nim         # a dense square matrix: all the linear algebra AP needs
 src/naffprop/ap.nim             # the algorithm and the preference range, plain Nim
 src/naffprop/sparse.nim         # the algorithm on the stored pairs of a sparse matrix
@@ -224,6 +252,7 @@ src/naffprop/rng.nim            # the seeded noise generator (or std/random)
 src/naffprop/core.nim           # nimpy exports, importable as naffprop.core
 src/naffprop/__init__.py        # R-style functions: argument checks, preferences, apcluster_k
 src/naffprop/_estimator.py      # the scikit-learn estimator
+tests/test_nim.nim              # the Nim package alone, C and JS backends
 tests/reference.py              # numpy port of Frey and Dueck's MATLAB code
 benchmark.py                    # naffprop vs scikit-learn (a uv script: deps in its header)
 benchmark_case.py               # one case in its own process: time and peak memory
@@ -256,6 +285,8 @@ compiler. To work on naffprop itself:
 uv sync                  # builds the extension
 uv run pytest tests      # against the numpy reference and scikit-learn
 uv run benchmark.py      # naffprop vs scikit-learn
+uv run nim c -r --path:src tests/test_nim.nim               # the Nim package (C)
+uv run nim js -d:nodejs -r --path:src tests/test_nim.nim    # the Nim package (JS, needs node)
 ```
 
 ## References

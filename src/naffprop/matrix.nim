@@ -8,6 +8,11 @@
 ## elsewhere: in a `Matrix`, or in a numpy array, so that the similarities can
 ## be used where Python stored them, without a copy.
 
+when defined(js):
+  # No UncheckedArray in JS: a view points to the seq of a Matrix instead.
+  template `[]`*[T](e: ptr seq[T]; k: int): T = e[][k]
+  template `[]=`*[T](e: ptr seq[T]; k: int; v: T) = e[][k] = v
+
 type
   Matrix*[T: SomeFloat] = object
     n*: int
@@ -15,14 +20,15 @@ type
 
   MatrixView*[T: SomeFloat] = object
     n*: int
-    data*: ptr UncheckedArray[T]
+    data*: (when defined(js): ptr seq[T] else: ptr UncheckedArray[T])
 
 func zeros*[T](n: int): Matrix[T] =
   Matrix[T](n: n, data: newSeq[T](n * n))
 
 func view*[T](m: var Matrix[T]): MatrixView[T] =
   ## A view of `m`, valid while `m` is alive and not resized.
-  MatrixView[T](n: m.n, data: cast[ptr UncheckedArray[T]](m.data[0].addr))
+  when defined(js): MatrixView[T](n: m.n, data: m.data.addr)
+  else: MatrixView[T](n: m.n, data: cast[ptr UncheckedArray[T]](m.data[0].addr))
 
 template `[]`*[T](m: Matrix[T] | MatrixView[T]; i, j: int): T =
   m.data[i * m.n + j]
