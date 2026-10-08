@@ -81,21 +81,21 @@ func beliefs*(r, a: Matrix[float], i: int, temperature: float): seq[float] =
 
 # The figure's frame and caption, in HTML at build time: the legend, then
 # the parameters of the run.
-const redDot* = """<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" style="fill:rgb(178,24,24)"/></svg>"""
+const evidenceDot* = """<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><defs><linearGradient id="ap-key-grad"><stop offset="0" stop-color="rgb(59,82,139)"/><stop offset="0.5" stop-color="rgb(253,231,37)"/><stop offset="1" stop-color="rgb(178,24,24)"/></linearGradient></defs><circle cx="8" cy="8" r="7" fill="url(#ap-key-grad)"/></svg>"""
 const arrow* = """<svg width="26" height="10" viewBox="0 0 26 10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" style="stroke:var(--ap-ink)" stroke-width="1.5"/><path d="M19,1 L25,5 L19,9 z" style="fill:var(--ap-ink)"/></svg>"""
 
 func legendHtml*(params: ApParameters): string =
-  ## What the marks mean, then the parameters of the run.
+  ## What color and arrows mean, then the parameters of the run.
   let pref = if params.quantile == 0.5: "median similarity"
              else: "similarity quantile " & $params.quantile
-  "<div class=\"key\"><span>" & redDot & "exemplar: r(k,k) + a(k,k) > 0, opaque " &
-    "once settled</span></div>\n" &
-    "<p>Color is the evidence r(k,k) + a(k,k) that k is an exemplar: blue to yellow " &
-    "while negative, red once positive. The bar has a tick for every point.</p>\n" &
-    "<div class=\"key\"><span>" & arrow & "i → k, as dark as i's belief that k " &
-    "is its exemplar: a softmax of a(i,k) + r(i,k)</span></div>\n" &
-    "<p class=\"params\">preference " & pref & " · damping λ = " & $params.damping &
-    " · convits " & $params.convits & " · maxits " & $params.maxits & "</p>"
+  "<div class=\"key\">" &
+    "<span>" & evidenceDot & "</span><span>evidence r(k,k) + a(k,k) that k is an " &
+    "exemplar (it is one when positive)</span>" &
+    "<span>" & arrow & "</span><span>i → k: i's belief that k is its exemplar</span>" &
+    "</div>\n" &
+    "<p class=\"params\"><span>preference " & pref & "</span> · <span>damping λ = " &
+    $params.damping & "</span> · <span>convits " & $params.convits &
+    "</span> · <span>maxits " & $params.maxits & "</span></p>"
 
 func figureHtml*(id: string, params: ApParameters): string =
   ## The frame an animation mounts in (the div `id`), with its legend.

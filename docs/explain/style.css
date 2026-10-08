@@ -66,10 +66,10 @@ button:focus-visible, .ap-slider:focus-visible { outline: 2px solid var(--ap-poi
 .ap-slider { flex: 1 1 12rem; min-width: 0; accent-color: var(--ap-point); }
 .ap-readout { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font: 0.9rem var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); }
 figcaption { font-size: 0.95rem; color: var(--muted); display: grid; gap: 8px; border-top: 1px solid var(--rule); padding-top: 12px; }
-.key { display: flex; flex-wrap: wrap; gap: 6px 18px; }
-.key span { display: inline-flex; align-items: center; gap: 6px; }
-.key svg { flex: none; }
+.key { display: grid; grid-template-columns: 28px 1fr; gap: 6px 10px; align-items: start; }
+.key > span:nth-child(odd) { display: flex; justify-content: center; height: 1.5em; align-items: center; }
 .params { font: 0.85rem var(--mono); }
+.params span { white-space: nowrap; }
 details.nb-file { border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
 details.nb-file > summary { cursor: pointer; padding: 10px 14px; font: 0.9rem var(--mono); }
 details.nb-file > summary span { color: var(--muted); }
