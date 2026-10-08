@@ -22,14 +22,22 @@ func detailsFilePartial(blk: JsonNode, nb: Nb): string =
 
 nb.backend.partials["nbFile"] = detailsFilePartial
 
-nbHeader("How exemplars emerge", eyebrow = "naffprop · explaining affinity propagation")
+nbHeader("How exemplars emerge", eyebrow = "naffprop · explaining affinity propagation",
+  repo = "pietroppeter/naffprop")
 
 nbText: """
 Affinity propagation (Frey and Dueck, [*Science* 2007](https://doi.org/10.1126/science.1136800),
-[pdf](https://people.csail.mit.edu/kjhsiao/Frey2007.pdf)) lets every point exchange two
-kinds of messages with every other point until a few of them stand out as **exemplars**.
-This is the paper's Fig. 1A, one iteration at a time: press Play, step with the arrows
-(or the arrow keys), or drag the slider.
+[pdf](https://people.csail.mit.edu/kjhsiao/Frey2007.pdf))
+is a clustering algorithm based on message passing that magically finds a "natural"
+number of clusters in a dataset.
+
+Every point exchanges two kinds of messages (responsibilities, availabilities) with
+every other point until a few of them stand out as **exemplars** (cluster centers).
+
+This is an interactive explanation of how exemplars emerge, inspired by the original
+paper's Fig. 1A.
+
+Press Play, step with the arrows (or the arrow keys), or drag the slider.
 """
 
 # The animation runs in the browser on data computed beforehand by naffprop's own
@@ -78,8 +86,8 @@ nbFile("animation.nim")
 
 nbText: """
 **The page.** The theme plugs our stylesheet into nimib, with no highlight.js, and adds
-`nbHeader`, the title with the line above it; the stylesheet has the colors for light
-and dark.
+`nbHeader`, the title with the line above it and a link to the repository; the
+stylesheet has the colors for light and dark.
 """
 nbFile("theme.nim")
 nbFile("style.css")
