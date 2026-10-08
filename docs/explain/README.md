@@ -22,8 +22,11 @@ written as JSON, which the pages embed and read.
 - `test_explain.nim`: `nim c -r docs/explain/test_explain.nim`, and after `gen_data`, for
   the JS side, `nim js -d:nodejs -r docs/explain/test_explain.nim`.
 
-- `toy25.nim`: the paper's 25 points, the authors' ToyProblemData.txt (no longer online at
-  its source; from a mirror, see the file). AP finds the paper's exemplars, 2, 6 and 19.
+- `toy25.nim`: the paper's 25 points, the authors' ToyProblemData.txt. Their page is
+  offline; the file was recovered from a mirror,
+  [jincheng9/AffinityPropagation](https://github.com/jincheng9/AffinityPropagation/tree/ad82f68)
+  (commit ad82f68), and checked by mapping it onto the paper's Fig. 1A (every point within
+  4 px). AP finds the paper's exemplars, 2, 6 and 19.
 
 The data: the paper's 25 points, similarity the negative squared distance, preference the median similarity,
 damping 0.9 and convits 10 (`fig1Parameters`: the exemplars emerge over more iterations
