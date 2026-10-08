@@ -26,8 +26,8 @@ jsony treeform/jsony c5874fb71435e3ced8ee0025822e15f5d0e8e622
 DEPS
 bin=$(mktemp -d)
 nim c -r --hints:off -o:"$bin/gen_data" "$here/gen_data.nim"
-nim c -r --hints:off -o:"$bin/test_explain" "$here/test_explain.nim"
-nim js -d:nodejs -r --hints:off -o:"$bin/test_explain.js" "$here/test_explain.nim"
+nim c -r --hints:off -o:"$bin/test_data" "$here/test_data.nim"
+nim js -d:nodejs -r --hints:off -o:"$bin/test_data.js" "$here/test_data.nim"
 # nimib writes the page next to the cwd: build from here
 (cd "$here" && nim c -r --hints:off -o:"$bin/fig1a" fig1a.nim)
 mkdir -p "$here/site"

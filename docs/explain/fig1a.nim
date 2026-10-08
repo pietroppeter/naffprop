@@ -4,7 +4,7 @@
 import std/[json, strutils, xmltree]
 import nimib
 import nimib/[highlight, renders]
-import theme, explain, animation
+import theme, data, animation
 
 nbInit
 nb.useExplainTheme()
@@ -22,7 +22,7 @@ func detailsFilePartial(blk: JsonNode, nb: Nb): string =
 
 nb.backend.partials["nbFile"] = detailsFilePartial
 
-nbHeader("How exemplars emerge", eyebrow = "naffprop · explaining affinity propagation",
+nbHeader("How exemplars emerge", eyebrow = "explaining affinity propagation",
   repo = "pietroppeter/naffprop")
 
 nbText: """
@@ -47,15 +47,15 @@ let run = parseJson(readFile("data/toy25.json")).to(ApRun)
 nbRawHtml figureHtml(apRoot, run.params)
 nbJsFromCodeOwnFile(apRoot):
   import std/json
-  import explain, animation
-  const data = staticRead("data/toy25.json")
-  mountAnimation(apRoot, parseJson(data).to(ApRun))
+  import data, animation
+  const runJson = staticRead("data/toy25.json")
+  mountAnimation(apRoot, parseJson(runJson).to(ApRun))
   enableArrowKeys()
 
 nbText: """
 ## The code
 
-From the algorithm to the page. The source of this page itself is under *Show Source*
+From the algorithm to an interactive explanation. The source of this page itself is under *Show Source*
 at the bottom.
 
 **The algorithm.** naffprop's own affinity propagation, the code that runs when you
@@ -74,7 +74,7 @@ result as JSON.
 The points are the authors' ToyProblemData.txt, from
 [jincheng9/AffinityPropagation](https://github.com/jincheng9/AffinityPropagation/tree/ad82f68).
 """
-nbFile("explain.nim")
+nbFile("data.nim")
 nbFile("toy25.nim")
 
 nbText: """

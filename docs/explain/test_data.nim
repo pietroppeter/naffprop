@@ -1,9 +1,9 @@
-## Checks of the explanation's data: nim c -r docs/explain/test_explain.nim, and
-## nim js -d:nodejs -r docs/explain/test_explain.nim for the JS side.
+## Checks of the explanation's data: nim c -r docs/explain/test_data.nim, and
+## nim js -d:nodejs -r docs/explain/test_data.nim for the JS side.
 import std/[json, unittest]
-import explain, toy25
+import data, toy25
 
-suite "explain data":
+suite "data":
   test "quantile as numpy's default":
     check quantile(@[3.0, 1.0, 2.0, 4.0], 0.5) == 2.5
     check quantile(@[3.0, 1.0, 2.0, 4.0], 0.25) == 1.75

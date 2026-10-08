@@ -6,7 +6,7 @@
 ## With negative squared distances and the median preference, AP picks points
 ## 2, 6 and 19 (from 0) as exemplars, as in the paper.
 
-import explain
+import data
 
 const toy25Points* = [
   (-2.341500, 3.696800), (-1.109200, 3.111700), (-1.566900, 1.835100), (-2.658500, 0.664900),

@@ -1,7 +1,7 @@
 ## Writes the data of the explanation: nim c -r docs/explain/gen_data.nim
 ## (from the repository root) -> docs/explain/data/toy25.json.
 import std/[json, os]
-import explain, toy25
+import data, toy25
 
 let dir = currentSourcePath().parentDir / "data"
 createDir dir

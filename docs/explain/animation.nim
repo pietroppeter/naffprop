@@ -11,7 +11,7 @@
 ## so the page decides them, for both themes.
 
 import std/[math, strutils]
-import explain
+import data
 when defined(js):
   include karax/prelude
   import karax/[kdom, vstyles]
@@ -89,8 +89,7 @@ func legendHtml*(params: ApParameters): string =
     "<span>" & arrow & "</span><span>i → k: i's belief that k is its exemplar</span>" &
     "</div>\n" &
     "<p class=\"params\"><strong>parameters</strong> <span>preference " & pref & "</span> · <span>damping λ = " &
-    $params.damping & "</span> · <span>convits " & $params.convits &
-    "</span> · <span>maxits " & $params.maxits & "</span></p>"
+    $params.damping & "</span> · <span>convits " & $params.convits & "</span></p>"
 
 func figureHtml*(id: string, params: ApParameters): string =
   ## The frame an animation mounts in (the div `id`), with its legend.
