@@ -81,6 +81,39 @@ jobs:
           uv pip install --python sdist-env --no-binary naffprop dist/*.tar.gz pytest
           sdist-env/bin/python -m pytest -v -p no:cacheprovider tests
 
+  # The interactive explanation (docs/explain): data, tests and pages, built on every
+  # push; published to GitHub Pages from main.
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Nim (nimlang) and libpcre3 (nim-markdown uses std/re)
+        run: |
+          sudo apt-get install -y libpcre3
+          uv venv docs-env
+          uv pip install --python docs-env nimlang
+          echo "$PWD/docs-env/bin" >> "$GITHUB_PATH"
+      - name: Build
+        run: sh docs/explain/build.sh
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/explain/site
+
+  docs-deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: docs
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
   publish:
     # Push a vX.Y.Z tag to release to PyPI (needs a PyPI trusted publisher for this repo,
     # workflow ci.yml, environment pypi).

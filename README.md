@@ -3,6 +3,8 @@
 [Affinity propagation] clustering written in [Nim] for Python. It aims to be the best of R's
 [apcluster] behind scikit-learn's API, and it is built with
 [nimlang](https://github.com/pietroppeter/uv-add-nimlang).
+How it works, interactively: [How exemplars emerge](https://pietroppeter.github.io/naffprop/),
+the paper's Fig. 1 one iteration at a time.
 
 > AI disclosure: this project is mostly vibed. Currently [level 7](https://www.visidata.org/blog/2026/ai/#level-6%3A-bots-coded%2C-human-understands-mostly) on visidata AI scale: Human specced, bots coded.
 
@@ -258,7 +260,7 @@ uv run benchmark.py      # naffprop vs scikit-learn
 
 ## References
 
-- Frey and Dueck, [Clustering by Passing Messages Between Data Points](https://doi.org/10.1126/science.1136800), Science 2007
+- Frey and Dueck, [Clustering by Passing Messages Between Data Points](https://doi.org/10.1126/science.1136800), Science 2007 ([pdf](https://people.csail.mit.edu/kjhsiao/Frey2007.pdf))
 - [apcluster] (R) by Bodenhofer, Kothmeier and Hochreiter, and its [paper](https://doi.org/10.1093/bioinformatics/btr406)
 - [scikit-learn's AffinityPropagation](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.AffinityPropagation.html)
 - Shiokawa, [Scalable Affinity Propagation for Massive Datasets](https://ojs.aaai.org/index.php/AAAI/article/view/17160),
