@@ -26,9 +26,9 @@
 body { background: var(--bg); color: var(--fg); font: 16px/1.55 var(--body); margin: 0; padding: 0 16px; }
 main, footer { max-width: 44rem; margin: 0 auto; }
 .nb-header { display: grid; gap: 8px; }
-.nb-header .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.nb-header .repo { display: inline-flex; align-items: center; gap: 6px; font: 0.8rem var(--mono); color: var(--muted); text-decoration: none; white-space: nowrap; }
-.nb-header .repo:hover { color: var(--fg); }
+.nb-header a.repo { justify-self: end; display: inline-flex; align-items: center; gap: 6px; font: 0.8rem var(--mono); color: var(--muted); text-decoration: none; white-space: nowrap; }
+.nb-header a.repo:hover { color: var(--fg); }
+.nb-header a.repo svg { width: 1.25em; height: 1.25em; flex: none; }
 main { padding-block: 32px; display: grid; gap: 16px; min-width: 0; }
 main > * { min-width: 0; }
 .eyebrow { font: 600 0.75rem/1 var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0; }
