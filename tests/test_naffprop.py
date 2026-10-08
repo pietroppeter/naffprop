@@ -373,3 +373,14 @@ def test_scaleap_estimator():
         AffinityPropagation(scaleap=True, leveraged=0.5).fit(x)
     with pytest.raises(ValueError):
         apcluster(scipy.sparse.csr_array(neg_dist_mat(x, 2)), scaleap=True)
+
+
+def test_nimble_version_matches_pyproject():
+    # The Nim package (naffprop.nimble) and the Python package are released together.
+    import pathlib
+    import re
+
+    root = pathlib.Path(__file__).parent.parent
+    nimble = re.search(r'^version\s*=\s*"(.+)"', (root / "naffprop.nimble").read_text(), re.M)
+    pyproject = re.search(r'^version\s*=\s*"(.+)"', (root / "pyproject.toml").read_text(), re.M)
+    assert nimble.group(1) == pyproject.group(1)

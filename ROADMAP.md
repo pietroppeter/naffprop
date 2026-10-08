@@ -20,6 +20,14 @@ a scalable version from the literature, with everything benchmarked.
 - The contiguous fast path of nimpy_numpy 0.2.0: similarities used where numpy stores them.
 - ScaleAP's pruning (`scaleap=True`): the same exemplars as the dense loop, storing the messages
   of a few percent of the pairs only, about 3x faster.
+- A Nim package too (`naffprop.nimble`, `import naffprop`), compiling to C and JS.
+
+## Next: the Nim package
+
+- Register `naffprop` in the Nim package list (nim-lang/packages), as for nimpy_numpy, so that
+  `nimble install naffprop` and `nimlang add naffprop` work by name.
+- A friendlier Nim API: functions taking points or a `Matrix` and the preference (or `q`), and
+  an owning type for the leveraged similarities (today a pointer to numpy's memory).
 
 ## Next: from R's apcluster
 
